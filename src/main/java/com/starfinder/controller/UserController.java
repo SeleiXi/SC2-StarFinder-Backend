@@ -1,12 +1,14 @@
 package com.starfinder.controller;
 
+import com.starfinder.dto.ProfileUpdateDTO;
 import com.starfinder.dto.RegisterDTO;
 import com.starfinder.dto.Result;
 import com.starfinder.entity.User;
 import com.starfinder.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/user")
@@ -22,7 +24,7 @@ public class UserController {
 
     @PostMapping("/login")
     public Result<User> login(@RequestBody RegisterDTO loginDTO) {
-        return userService.verifyUser(loginDTO); // TODO 本系统貌似不需要id，看看黑马有没有id栏位
+        return userService.verifyUser(loginDTO);
     }
 
     @GetMapping("/{id}")
@@ -30,4 +32,14 @@ public class UserController {
         return userService.getUserById(id);
     }
 
+    @PutMapping("/{id}/profile")
+    public Result<User> updateProfile(@PathVariable Long id, @RequestBody ProfileUpdateDTO dto) {
+        return userService.updateProfile(id, dto);
+    }
+
+    @GetMapping("/match")
+    public List<User> findMatches(@RequestParam int mmr, @RequestParam int range,
+                                  @RequestParam(required = false) String race) {
+        return userService.findMatches(mmr, range, race);
+    }
 }

@@ -3,7 +3,7 @@ package com.starfinder.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,10 +12,15 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 1)
+    @Column(name = "battle_tag")
+    private String battleTag;
+
+    @Column(name = "character_id")
+    private Long characterId;
+
+    @Column(length = 1)
     private String race;
 
-    @Column(nullable = false)
     private Integer mmr;
 
     @Column(name = "phone_number")
@@ -26,60 +31,35 @@ public class User {
 
     private String qq;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "stream_url")
+    private String streamUrl;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    private String signature;
 
-    public String getName() {
-        return name;
-    }
+    private String region;
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getRace() {
-        return race;
-    }
-
-    public void setRace(String race) {
-        this.race = race;
-    }
-
-    public Integer getMmr() {
-        return mmr;
-    }
-
-    public void setMmr(Integer mmr) {
-        this.mmr = mmr;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getQq() {
-        return qq;
-    }
-
-    public void setQq(String qq) {
-        this.qq = qq;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getBattleTag() { return battleTag; }
+    public void setBattleTag(String battleTag) { this.battleTag = battleTag; }
+    public Long getCharacterId() { return characterId; }
+    public void setCharacterId(Long characterId) { this.characterId = characterId; }
+    public String getRace() { return race; }
+    public void setRace(String race) { this.race = race; }
+    public Integer getMmr() { return mmr; }
+    public void setMmr(Integer mmr) { this.mmr = mmr; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public String getQq() { return qq; }
+    public void setQq(String qq) { this.qq = qq; }
+    public String getStreamUrl() { return streamUrl; }
+    public void setStreamUrl(String streamUrl) { this.streamUrl = streamUrl; }
+    public String getSignature() { return signature; }
+    public void setSignature(String signature) { this.signature = signature; }
+    public String getRegion() { return region; }
+    public void setRegion(String region) { this.region = region; }
 }

@@ -1,18 +1,30 @@
 spring:
-  # profiles:
-  #   active: test
   datasource:
-    url: jdbc:mysql://${SC2_DB_URL:localhost:3306/sc2_db}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${SC2_DB_USERNAME:root}
-    password: ${SC2_DB_PASSWORD:root}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:mem:sc2db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
 
 server:
   address: 0.0.0.0
-  port: 80
+  port: 8081
 
-abc: Value
+sc2pulse:
+  base-url: https://sc2pulse.nephest.com/sc2/api
