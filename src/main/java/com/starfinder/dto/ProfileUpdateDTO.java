@@ -8,6 +8,15 @@ public class ProfileUpdateDTO {
     private String streamUrl;
     private String signature;
     private String region;
+    private Integer mmr;
+
+    public Integer getMmr() {
+        return mmr;
+    }
+
+    public void setMmr(Integer mmr) {
+        this.mmr = mmr;
+    }
 
     public String getName() {
         return name;

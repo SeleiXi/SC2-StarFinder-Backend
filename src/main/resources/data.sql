@@ -1,21 +1,24 @@
--- Initial seed data for SC2 StarFinder
+-- Initial seed data for SC2 StarFinder (H2 compatible)
+-- Uses MERGE INTO to avoid duplicates on restart
 
 -- Sample users (password is '123456')
-INSERT INTO
-    users (
-        name,
-        battle_tag,
-        character_id,
-        race,
-        mmr,
-        phone_number,
-        password,
-        qq,
-        stream_url,
-        signature,
-        region
-    )
+MERGE INTO users (
+    id,
+    name,
+    battle_tag,
+    character_id,
+    race,
+    mmr,
+    phone_number,
+    password,
+    qq,
+    stream_url,
+    signature,
+    region,
+    role
+) KEY (id)
 VALUES (
+        1,
         'Amaris',
         'Amaris#31262',
         341197597,
@@ -26,24 +29,27 @@ VALUES (
         '692793075',
         '',
         '星际争霸2爱好者',
-        'EU'
+        'EU',
+        'admin'
     );
 
-INSERT INTO
-    users (
-        name,
-        battle_tag,
-        character_id,
-        race,
-        mmr,
-        phone_number,
-        password,
-        qq,
-        stream_url,
-        signature,
-        region
-    )
+MERGE INTO users (
+    id,
+    name,
+    battle_tag,
+    character_id,
+    race,
+    mmr,
+    phone_number,
+    password,
+    qq,
+    stream_url,
+    signature,
+    region,
+    role
+) KEY (id)
 VALUES (
+        2,
         'Player2',
         'Player2#1234',
         NULL,
@@ -52,26 +58,29 @@ VALUES (
         '13800000002',
         '123456',
         '100000002',
-        '',
+        'https://www.bilibili.com/example',
         '虫群之心',
-        'US'
+        'US',
+        'user'
     );
 
-INSERT INTO
-    users (
-        name,
-        battle_tag,
-        character_id,
-        race,
-        mmr,
-        phone_number,
-        password,
-        qq,
-        stream_url,
-        signature,
-        region
-    )
+MERGE INTO users (
+    id,
+    name,
+    battle_tag,
+    character_id,
+    race,
+    mmr,
+    phone_number,
+    password,
+    qq,
+    stream_url,
+    signature,
+    region,
+    role
+) KEY (id)
 VALUES (
+        3,
         'Player3',
         'Player3#5678',
         NULL,
@@ -82,24 +91,27 @@ VALUES (
         '100000003',
         '',
         '我的荣耀即忠诚',
-        'US'
+        'US',
+        'user'
     );
 
-INSERT INTO
-    users (
-        name,
-        battle_tag,
-        character_id,
-        race,
-        mmr,
-        phone_number,
-        password,
-        qq,
-        stream_url,
-        signature,
-        region
-    )
+MERGE INTO users (
+    id,
+    name,
+    battle_tag,
+    character_id,
+    race,
+    mmr,
+    phone_number,
+    password,
+    qq,
+    stream_url,
+    signature,
+    region,
+    role
+) KEY (id)
 VALUES (
+        4,
         'Player4',
         'Player4#9999',
         NULL,
@@ -110,24 +122,27 @@ VALUES (
         '100000004',
         '',
         'GG',
-        'KR'
+        'KR',
+        'user'
     );
 
-INSERT INTO
-    users (
-        name,
-        battle_tag,
-        character_id,
-        race,
-        mmr,
-        phone_number,
-        password,
-        qq,
-        stream_url,
-        signature,
-        region
-    )
+MERGE INTO users (
+    id,
+    name,
+    battle_tag,
+    character_id,
+    race,
+    mmr,
+    phone_number,
+    password,
+    qq,
+    stream_url,
+    signature,
+    region,
+    role
+) KEY (id)
 VALUES (
+        5,
         'Player5',
         'Player5#1111',
         NULL,
@@ -138,21 +153,23 @@ VALUES (
         '100000005',
         '',
         '运营流',
-        'EU'
+        'EU',
+        'user'
     );
 
 -- Sample cheaters
-INSERT INTO
-    cheaters (
-        battle_tag,
-        cheat_type,
-        description,
-        reported_by,
-        status,
-        mmr,
-        race
-    )
+MERGE INTO cheaters (
+    id,
+    battle_tag,
+    cheat_type,
+    description,
+    reported_by,
+    status,
+    mmr,
+    race
+) KEY (id)
 VALUES (
+        1,
         'Hacker1#1234',
         '开图',
         '多次被发现开图行为，已有录像证据',
@@ -162,17 +179,18 @@ VALUES (
         'T'
     );
 
-INSERT INTO
-    cheaters (
-        battle_tag,
-        cheat_type,
-        description,
-        reported_by,
-        status,
-        mmr,
-        race
-    )
+MERGE INTO cheaters (
+    id,
+    battle_tag,
+    cheat_type,
+    description,
+    reported_by,
+    status,
+    mmr,
+    race
+) KEY (id)
 VALUES (
+        2,
         'Hacker2#5678',
         '建造列表',
         '使用第三方建造列表插件',
@@ -183,15 +201,16 @@ VALUES (
     );
 
 -- Sample tutorials
-INSERT INTO
-    tutorials (
-        title,
-        url,
-        category,
-        description,
-        author
-    )
+MERGE INTO tutorials (
+    id,
+    title,
+    url,
+    category,
+    description,
+    author
+) KEY (id)
 VALUES (
+        1,
         '[瑞白]PVT闪追巨像',
         'https://www.bilibili.com/video/BV1example1',
         'PvT',
@@ -199,15 +218,16 @@ VALUES (
         'Amaris'
     );
 
-INSERT INTO
-    tutorials (
-        title,
-        url,
-        category,
-        description,
-        author
-    )
+MERGE INTO tutorials (
+    id,
+    title,
+    url,
+    category,
+    description,
+    author
+) KEY (id)
 VALUES (
+        2,
         '[瑞白]ZVP运营教学',
         'https://www.bilibili.com/video/BV1example2',
         'ZvP',
@@ -215,15 +235,16 @@ VALUES (
         'Amaris'
     );
 
-INSERT INTO
-    tutorials (
-        title,
-        url,
-        category,
-        description,
-        author
-    )
+MERGE INTO tutorials (
+    id,
+    title,
+    url,
+    category,
+    description,
+    author
+) KEY (id)
 VALUES (
+        3,
         'TvZ生化打法入门',
         'https://www.bilibili.com/video/BV1example3',
         'TvZ',
@@ -232,20 +253,21 @@ VALUES (
     );
 
 -- Sample events
-INSERT INTO
-    events (
-        title,
-        description,
-        rules,
-        rewards,
-        contact_link,
-        group_link,
-        submitted_by,
-        status,
-        region,
-        start_time
-    )
+MERGE INTO events (
+    id,
+    title,
+    description,
+    rules,
+    rewards,
+    contact_link,
+    group_link,
+    submitted_by,
+    status,
+    region,
+    start_time
+) KEY (id)
 VALUES (
+        1,
         'SC2 周末杯赛',
         '每周六晚8点开始的业余杯赛，欢迎所有水平的玩家参加！',
         'Bo3单败淘汰赛，禁图：金色城墙',
@@ -258,20 +280,21 @@ VALUES (
         '2026-02-22 20:00'
     );
 
-INSERT INTO
-    events (
-        title,
-        description,
-        rules,
-        rewards,
-        contact_link,
-        group_link,
-        submitted_by,
-        status,
-        region,
-        start_time
-    )
+MERGE INTO events (
+    id,
+    title,
+    description,
+    rules,
+    rewards,
+    contact_link,
+    group_link,
+    submitted_by,
+    status,
+    region,
+    start_time
+) KEY (id)
 VALUES (
+        2,
         '星际2高手挑战赛',
         'MMR 4000+玩家专属赛事',
         'Bo5双败淘汰赛',

@@ -38,6 +38,9 @@ public class User {
 
     private String region;
 
+    @Column(length = 20)
+    private String role;
+
     public Long getId() {
         return id;
     }
@@ -132,5 +135,13 @@ public class User {
 
     public void setRegion(String region) {
         this.region = region;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

@@ -39,6 +39,7 @@ public class UserServiceImpl implements UserService {
         user.setRegion(registerDTO.getRegion() != null ? registerDTO.getRegion() : "US");
         user.setRace("");
         user.setMmr(0);
+        user.setRole("user");
 
         // Try to fetch MMR from SC2 Pulse if battleTag is provided
         if (registerDTO.getBattleTag() != null && !registerDTO.getBattleTag().isEmpty()) {
@@ -107,8 +108,11 @@ public class UserServiceImpl implements UserService {
         if (dto.getRegion() != null)
             user.setRegion(dto.getRegion());
 
-        // Re-fetch MMR if battleTag changed
-        if (dto.getBattleTag() != null && !dto.getBattleTag().isEmpty()) {
+        // Manual MMR override takes priority
+        if (dto.getMmr() != null && dto.getMmr() > 0) {
+            user.setMmr(dto.getMmr());
+        } else if (dto.getBattleTag() != null && !dto.getBattleTag().isEmpty()) {
+            // Re-fetch MMR from SC2 Pulse if battleTag changed and no manual MMR
             try {
                 Long characterId = sc2PulseService.findCharacterId(dto.getBattleTag());
                 if (characterId != null) {

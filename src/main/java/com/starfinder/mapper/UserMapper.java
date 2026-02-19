@@ -8,9 +8,9 @@ import java.util.List;
 @Mapper
 public interface UserMapper {
 
-    @Insert("INSERT INTO users (name, battle_tag, character_id, race, mmr, phone_number, password, qq, stream_url, signature, region) "
+    @Insert("INSERT INTO users (name, battle_tag, character_id, race, mmr, phone_number, password, qq, stream_url, signature, region, role) "
             +
-            "VALUES (#{name}, #{battleTag}, #{characterId}, #{race}, #{mmr}, #{phoneNumber}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region})")
+            "VALUES (#{name}, #{battleTag}, #{characterId}, #{race}, #{mmr}, #{phoneNumber}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region}, #{role})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(User user);
 
@@ -31,9 +31,12 @@ public interface UserMapper {
             @Param("race") String race);
 
     @Update("UPDATE users SET name=#{name}, battle_tag=#{battleTag}, character_id=#{characterId}, race=#{race}, " +
-            "mmr=#{mmr}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region} WHERE id=#{id}")
+            "mmr=#{mmr}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role} WHERE id=#{id}")
     void update(User user);
 
     @Select("SELECT * FROM users")
     List<User> findAll();
+
+    @Delete("DELETE FROM users WHERE id = #{id}")
+    void deleteById(Long id);
 }
