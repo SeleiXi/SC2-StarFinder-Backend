@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface CheaterService {
     Result<Cheater> reportCheater(CheaterDTO dto, Long reportedBy);
+
     List<Cheater> getApprovedCheaters();
+
     List<Cheater> searchCheaters(String battleTag);
+
     Result<Cheater> approveCheater(Long id);
 }

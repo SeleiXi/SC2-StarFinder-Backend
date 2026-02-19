@@ -8,7 +8,8 @@ import java.util.List;
 @Mapper
 public interface EventMapper {
 
-    @Insert("INSERT INTO events (title, description, rules, rewards, contact_link, group_link, submitted_by, status, region, start_time) " +
+    @Insert("INSERT INTO events (title, description, rules, rewards, contact_link, group_link, submitted_by, status, region, start_time) "
+            +
             "VALUES (#{title}, #{description}, #{rules}, #{rewards}, #{contactLink}, #{groupLink}, #{submittedBy}, #{status}, #{region}, #{startTime})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Event event);

@@ -21,7 +21,7 @@ public class SC2Controller {
 
     @GetMapping("/mmr/{characterId}")
     public Map<String, Object> getMMR(@PathVariable Long characterId,
-                                       @RequestParam(defaultValue = "LOTV_1V1") String queue) {
+            @RequestParam(defaultValue = "LOTV_1V1") String queue) {
         List<Map<String, Object>> teams = sc2PulseService.getCharacterTeams(characterId, queue);
         if (!teams.isEmpty()) {
             return teams.get(0);

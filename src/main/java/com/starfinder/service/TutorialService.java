@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface TutorialService {
     Result<Tutorial> createTutorial(TutorialDTO dto);
+
     List<Tutorial> getAllTutorials();
+
     List<Tutorial> getTutorialsByCategory(String category);
+
     Result<Void> deleteTutorial(Long id);
 }

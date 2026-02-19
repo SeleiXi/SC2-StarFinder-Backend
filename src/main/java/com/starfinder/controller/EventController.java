@@ -18,7 +18,7 @@ public class EventController {
 
     @PostMapping
     public Result<Event> createEvent(@RequestBody EventDTO dto,
-                                     @RequestParam(required = false) Long userId) {
+            @RequestParam(required = false) Long userId) {
         return eventService.createEvent(dto, userId);
     }
 

@@ -92,13 +92,20 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("用户不存在");
         }
 
-        if (dto.getName() != null) user.setName(dto.getName());
-        if (dto.getBattleTag() != null) user.setBattleTag(dto.getBattleTag());
-        if (dto.getRace() != null) user.setRace(dto.getRace());
-        if (dto.getQq() != null) user.setQq(dto.getQq());
-        if (dto.getStreamUrl() != null) user.setStreamUrl(dto.getStreamUrl());
-        if (dto.getSignature() != null) user.setSignature(dto.getSignature());
-        if (dto.getRegion() != null) user.setRegion(dto.getRegion());
+        if (dto.getName() != null)
+            user.setName(dto.getName());
+        if (dto.getBattleTag() != null)
+            user.setBattleTag(dto.getBattleTag());
+        if (dto.getRace() != null)
+            user.setRace(dto.getRace());
+        if (dto.getQq() != null)
+            user.setQq(dto.getQq());
+        if (dto.getStreamUrl() != null)
+            user.setStreamUrl(dto.getStreamUrl());
+        if (dto.getSignature() != null)
+            user.setSignature(dto.getSignature());
+        if (dto.getRegion() != null)
+            user.setRegion(dto.getRegion());
 
         // Re-fetch MMR if battleTag changed
         if (dto.getBattleTag() != null && !dto.getBattleTag().isEmpty()) {

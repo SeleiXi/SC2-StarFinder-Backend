@@ -18,7 +18,7 @@ public class CheaterController {
 
     @PostMapping("/report")
     public Result<Cheater> reportCheater(@RequestBody CheaterDTO dto,
-                                         @RequestParam(required = false) Long userId) {
+            @RequestParam(required = false) Long userId) {
         return cheaterService.reportCheater(dto, userId);
     }
 

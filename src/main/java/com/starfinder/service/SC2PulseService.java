@@ -92,7 +92,8 @@ public class SC2PulseService {
 
         for (Map<String, Object> charInfo : characters) {
             Object idObj = charInfo.get("id");
-            if (idObj == null) continue;
+            if (idObj == null)
+                continue;
             Long charId = ((Number) idObj).longValue();
 
             // Verify by checking teams for matching battleTag

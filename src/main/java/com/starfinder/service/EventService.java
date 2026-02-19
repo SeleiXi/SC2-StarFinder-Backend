@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface EventService {
     Result<Event> createEvent(EventDTO dto, Long submittedBy);
+
     List<Event> getApprovedEvents();
+
     List<Event> getAllEvents();
+
     Result<Event> approveEvent(Long id);
 }

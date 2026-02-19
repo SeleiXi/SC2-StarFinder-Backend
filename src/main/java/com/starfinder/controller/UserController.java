@@ -39,7 +39,7 @@ public class UserController {
 
     @GetMapping("/match")
     public List<User> findMatches(@RequestParam int mmr, @RequestParam int range,
-                                  @RequestParam(required = false) String race) {
+            @RequestParam(required = false) String race) {
         return userService.findMatches(mmr, range, race);
     }
 }
