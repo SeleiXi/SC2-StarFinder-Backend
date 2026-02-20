@@ -2,21 +2,22 @@
 -- Uses INSERT IGNORE to avoid duplicates on restart
 
 -- Sample users (password is '123456')
-INSERT IGNORE INTO users (
-    id,
-    name,
-    battle_tag,
-    character_id,
-    race,
-    mmr,
-    phone_number,
-    password,
-    qq,
-    stream_url,
-    signature,
-    region,
-    role
-)
+INSERT IGNORE INTO
+    users (
+        id,
+        name,
+        battle_tag,
+        character_id,
+        race,
+        mmr,
+        phone_number,
+        password,
+        qq,
+        stream_url,
+        signature,
+        region,
+        role
+    )
 VALUES (
         1,
         'Amaris',
@@ -33,21 +34,22 @@ VALUES (
         'admin'
     );
 
-INSERT IGNORE INTO users (
-    id,
-    name,
-    battle_tag,
-    character_id,
-    race,
-    mmr,
-    phone_number,
-    password,
-    qq,
-    stream_url,
-    signature,
-    region,
-    role
-)
+INSERT IGNORE INTO
+    users (
+        id,
+        name,
+        battle_tag,
+        character_id,
+        race,
+        mmr,
+        phone_number,
+        password,
+        qq,
+        stream_url,
+        signature,
+        region,
+        role
+    )
 VALUES (
         2,
         'Player2',
@@ -64,21 +66,22 @@ VALUES (
         'user'
     );
 
-INSERT IGNORE INTO users (
-    id,
-    name,
-    battle_tag,
-    character_id,
-    race,
-    mmr,
-    phone_number,
-    password,
-    qq,
-    stream_url,
-    signature,
-    region,
-    role
-)
+INSERT IGNORE INTO
+    users (
+        id,
+        name,
+        battle_tag,
+        character_id,
+        race,
+        mmr,
+        phone_number,
+        password,
+        qq,
+        stream_url,
+        signature,
+        region,
+        role
+    )
 VALUES (
         3,
         'Player3',
@@ -95,21 +98,22 @@ VALUES (
         'user'
     );
 
-INSERT IGNORE INTO users (
-    id,
-    name,
-    battle_tag,
-    character_id,
-    race,
-    mmr,
-    phone_number,
-    password,
-    qq,
-    stream_url,
-    signature,
-    region,
-    role
-)
+INSERT IGNORE INTO
+    users (
+        id,
+        name,
+        battle_tag,
+        character_id,
+        race,
+        mmr,
+        phone_number,
+        password,
+        qq,
+        stream_url,
+        signature,
+        region,
+        role
+    )
 VALUES (
         4,
         'Player4',
@@ -126,21 +130,22 @@ VALUES (
         'user'
     );
 
-INSERT IGNORE INTO users (
-    id,
-    name,
-    battle_tag,
-    character_id,
-    race,
-    mmr,
-    phone_number,
-    password,
-    qq,
-    stream_url,
-    signature,
-    region,
-    role
-)
+INSERT IGNORE INTO
+    users (
+        id,
+        name,
+        battle_tag,
+        character_id,
+        race,
+        mmr,
+        phone_number,
+        password,
+        qq,
+        stream_url,
+        signature,
+        region,
+        role
+    )
 VALUES (
         5,
         'Player5',
@@ -158,16 +163,17 @@ VALUES (
     );
 
 -- Sample cheaters
-INSERT IGNORE INTO cheaters (
-    id,
-    battle_tag,
-    cheat_type,
-    description,
-    reported_by,
-    status,
-    mmr,
-    race
-)
+INSERT IGNORE INTO
+    cheaters (
+        id,
+        battle_tag,
+        cheat_type,
+        description,
+        reported_by,
+        status,
+        mmr,
+        race
+    )
 VALUES (
         1,
         'Hacker1#1234',
@@ -179,16 +185,17 @@ VALUES (
         'T'
     );
 
-INSERT IGNORE INTO cheaters (
-    id,
-    battle_tag,
-    cheat_type,
-    description,
-    reported_by,
-    status,
-    mmr,
-    race
-)
+INSERT IGNORE INTO
+    cheaters (
+        id,
+        battle_tag,
+        cheat_type,
+        description,
+        reported_by,
+        status,
+        mmr,
+        race
+    )
 VALUES (
         2,
         'Hacker2#5678',
@@ -201,14 +208,15 @@ VALUES (
     );
 
 -- Sample tutorials
-INSERT IGNORE INTO tutorials (
-    id,
-    title,
-    url,
-    category,
-    description,
-    author
-)
+INSERT IGNORE INTO
+    tutorials (
+        id,
+        title,
+        url,
+        category,
+        description,
+        author
+    )
 VALUES (
         1,
         '[瑞白]PVT闪追巨像',
@@ -218,14 +226,15 @@ VALUES (
         'Amaris'
     );
 
-INSERT IGNORE INTO tutorials (
-    id,
-    title,
-    url,
-    category,
-    description,
-    author
-)
+INSERT IGNORE INTO
+    tutorials (
+        id,
+        title,
+        url,
+        category,
+        description,
+        author
+    )
 VALUES (
         2,
         '[瑞白]ZVP运营教学',
@@ -235,14 +244,15 @@ VALUES (
         'Amaris'
     );
 
-INSERT IGNORE INTO tutorials (
-    id,
-    title,
-    url,
-    category,
-    description,
-    author
-)
+INSERT IGNORE INTO
+    tutorials (
+        id,
+        title,
+        url,
+        category,
+        description,
+        author
+    )
 VALUES (
         3,
         'TvZ生化打法入门',
@@ -253,19 +263,20 @@ VALUES (
     );
 
 -- Sample events
-INSERT IGNORE INTO events (
-    id,
-    title,
-    description,
-    rules,
-    rewards,
-    contact_link,
-    group_link,
-    submitted_by,
-    status,
-    region,
-    start_time
-)
+INSERT IGNORE INTO
+    events (
+        id,
+        title,
+        description,
+        rules,
+        rewards,
+        contact_link,
+        group_link,
+        submitted_by,
+        status,
+        region,
+        start_time
+    )
 VALUES (
         1,
         'SC2 周末杯赛',
@@ -280,19 +291,20 @@ VALUES (
         '2026-02-22 20:00'
     );
 
-INSERT IGNORE INTO events (
-    id,
-    title,
-    description,
-    rules,
-    rewards,
-    contact_link,
-    group_link,
-    submitted_by,
-    status,
-    region,
-    start_time
-)
+INSERT IGNORE INTO
+    events (
+        id,
+        title,
+        description,
+        rules,
+        rewards,
+        contact_link,
+        group_link,
+        submitted_by,
+        status,
+        region,
+        start_time
+    )
 VALUES (
         2,
         '星际2高手挑战赛',
