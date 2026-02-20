@@ -9,6 +9,6 @@ RUN ./mvnw package -DskipTests -B
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8081
+EXPOSE 8089
 ENV SPRING_PROFILES_ACTIVE=postgres
 ENTRYPOINT ["java", "-jar", "app.jar"]

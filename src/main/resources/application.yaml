@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: h2
+    active: mysql
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,7 +16,7 @@ mybatis:
 
 server:
   address: 0.0.0.0
-  port: 8081
+  port: 8089
 
 sc2pulse:
   base-url: https://sc2pulse.nephest.com/sc2/api
