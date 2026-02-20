@@ -25,9 +25,7 @@ jobs:
         run: mvn -B compile --file pom.xml
 
       - name: Run tests
-        run: mvn -B test --file pom.xml
-        env:
-          SPRING_PROFILES_ACTIVE: h2
+        run: mvn -B test --file pom.xml -Dspring.profiles.active=h2
 
       - name: Package
         run: mvn -B package -DskipTests --file pom.xml
