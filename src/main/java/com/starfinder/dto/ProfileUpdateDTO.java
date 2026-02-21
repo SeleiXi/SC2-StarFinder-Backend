@@ -8,6 +8,7 @@ public class ProfileUpdateDTO {
     private String battleTagEU;
     private String battleTagKR;
     private String race;
+    private String commander;
     private String qq;
     private String streamUrl;
     private String signature;
@@ -112,6 +113,14 @@ public class ProfileUpdateDTO {
 
     public void setRace(String race) {
         this.race = race;
+    }
+
+    public String getCommander() {
+        return commander;
+    }
+
+    public void setCommander(String commander) {
+        this.commander = commander;
     }
 
     public String getQq() {

@@ -20,11 +20,14 @@ public class AIController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${ai.api-key:YOUR_DEEPSEEK_API_KEY}")
+    @Value("${ai.api-key}")
     private String apiKey;
 
-    @Value("${ai.api-url:https://api.deepseek.com/chat/completions}")
+    @Value("${ai.api-url}")
     private String apiUrl;
+
+    @Value("${ai.model:deepseek-chat}")
+    private String modelName;
 
     private static final String SYSTEM_PROMPT = "You are a professional StarCraft II tactical advisor. " +
             "You have expert knowledge of game mechanics, build orders, unit counters, and map strategies. " +
@@ -38,13 +41,17 @@ public class AIController {
             return Result.BadRequest("Prompt cannot be empty");
         }
 
+        if (apiKey == null || apiKey.equals("NONE") || apiKey.isEmpty()) {
+            return Result.error("AI service is not configured (API Key is missing)");
+        }
+
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + apiKey);
 
             Map<String, Object> body = new HashMap<>();
-            body.put("model", "deepseek-chat");
+            body.put("model", modelName);
             
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT));

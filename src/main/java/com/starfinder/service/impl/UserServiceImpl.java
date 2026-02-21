@@ -162,6 +162,8 @@ public class UserServiceImpl implements UserService {
             user.setBattleTag(dto.getBattleTag());
         if (dto.getRace() != null)
             user.setRace(dto.getRace());
+        if (dto.getCommander() != null)
+            user.setCommander(dto.getCommander());
         if (dto.getQq() != null)
             user.setQq(dto.getQq());
         if (dto.getStreamUrl() != null)
@@ -182,8 +184,14 @@ public class UserServiceImpl implements UserService {
         if (dto.getBattleTagKR() != null)
             user.setBattleTagKR(dto.getBattleTagKR());
 
-        // Always try to sync MMR from SC2 Pulse when BattleTag is updated or profile is saved
+        // Always try to sync MMR from SC2 Pulse when BattleTag is updated
         syncUserMMR(user);
+        
+        // Manual MMR overrides sync (Task 5)
+        if (dto.getMmr() != null) user.setMmr(dto.getMmr());
+        if (dto.getMmr2v2() != null) user.setMmr2v2(dto.getMmr2v2());
+        if (dto.getMmr3v3() != null) user.setMmr3v3(dto.getMmr3v3());
+        if (dto.getMmr4v4() != null) user.setMmr4v4(dto.getMmr4v4());
 
         userMapper.update(user);
         user.setPassword(null);
@@ -223,6 +231,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> findMatches(int mmr, int range, String opponentRace, String mode) {
+        if ("coop".equalsIgnoreCase(mode)) {
+            // Task 6: Match by commander
+            List<User> matches = (opponentRace != null && !opponentRace.isEmpty())
+                    ? userMapper.findByCommander(opponentRace)
+                    : userMapper.findAll();
+            for (User u : matches) u.setPassword(null);
+            return matches;
+        }
+
         int minMmr = mmr - range;
         int maxMmr = mmr + range;
         List<User> matches;

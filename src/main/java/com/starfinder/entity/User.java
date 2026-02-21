@@ -44,6 +44,9 @@ public class User {
     @Column(name = "mmr_4v4")
     private Integer mmr4v4;
 
+    @Column(name = "commander")
+    private String commander;
+
     @Column(name = "email")
     private String email;
 
@@ -164,6 +167,14 @@ public class User {
 
     public void setMmr4v4(Integer mmr4v4) {
         this.mmr4v4 = mmr4v4;
+    }
+
+    public String getCommander() {
+        return commander;
+    }
+
+    public void setCommander(String commander) {
+        this.commander = commander;
     }
 
     public String getEmail() {
