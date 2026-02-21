@@ -34,3 +34,4 @@ build/
 
 .fake
 backend.log
+superstar_data.json
