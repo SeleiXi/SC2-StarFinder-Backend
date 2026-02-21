@@ -69,10 +69,10 @@ public class SC2PulseService {
     }
 
     /**
-     * Get MMR for a character
+     * Get MMR for a character by queue
      */
-    public Integer getMMR(Long characterId) {
-        List<Map<String, Object>> teams = getCharacterTeams(characterId, "LOTV_1V1");
+    public Integer getMMR(Long characterId, String queue) {
+        List<Map<String, Object>> teams = getCharacterTeams(characterId, queue);
         if (!teams.isEmpty()) {
             Object rating = teams.get(0).get("rating");
             if (rating instanceof Number) {
@@ -80,6 +80,13 @@ public class SC2PulseService {
             }
         }
         return null;
+    }
+
+    /**
+     * Get 1v1 MMR for a character (legacy)
+     */
+    public Integer getMMR(Long characterId) {
+        return getMMR(characterId, "LOTV_1V1");
     }
 
     /**

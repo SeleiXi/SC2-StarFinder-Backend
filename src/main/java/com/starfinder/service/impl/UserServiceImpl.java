@@ -36,6 +36,11 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("验证码不能为空");
         }
         
+        // Password strength check
+        if (registerDTO.getPassword() == null || registerDTO.getPassword().length() < 8) {
+            return Result.BadRequest("密码太弱：需至少8位");
+        }
+
         // Check verification code
         if (!emailService.verifyCode(registerDTO.getEmail(), registerDTO.getEmailCode())) {
             return Result.BadRequest("验证码无效或已过期");
@@ -47,20 +52,17 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("该邮箱已注册");
         }
 
-        // Check if name (nickname) already exists
-        if (registerDTO.getName() != null && !registerDTO.getName().trim().isEmpty()) {
-            User existingName = userMapper.findByName(registerDTO.getName());
-            if (existingName != null) {
-                return Result.BadRequest("该昵称已被使用");
-            }
-        } else {
-            return Result.BadRequest("昵称不能为空");
-        }
-
         User user = new User();
         user.setEmail(registerDTO.getEmail());
         user.setPassword(registerDTO.getPassword());
-        user.setName(registerDTO.getName().trim());
+        
+        // Use email as name if not provided
+        String name = registerDTO.getName();
+        if (name == null || name.trim().isEmpty()) {
+            name = registerDTO.getEmail().split("@")[0];
+        }
+        user.setName(name.trim());
+        
         user.setBattleTag(registerDTO.getBattleTag());
         user.setQq(registerDTO.getQq());
         user.setRegion(registerDTO.getRegion() != null ? registerDTO.getRegion() : "US");
@@ -74,10 +76,10 @@ public class UserServiceImpl implements UserService {
                 Long characterId = sc2PulseService.findCharacterId(registerDTO.getBattleTag());
                 if (characterId != null) {
                     user.setCharacterId(characterId);
-                    Integer mmr = sc2PulseService.getMMR(characterId);
-                    if (mmr != null) {
-                        user.setMmr(mmr);
-                    }
+                    user.setMmr(sc2PulseService.getMMR(characterId, "LOTV_1V1"));
+                    user.setMmr2v2(sc2PulseService.getMMR(characterId, "LOTV_2V2"));
+                    user.setMmr3v3(sc2PulseService.getMMR(characterId, "LOTV_3V3"));
+                    user.setMmr4v4(sc2PulseService.getMMR(characterId, "LOTV_4V4"));
                 }
             } catch (Exception e) {
                 // SC2 Pulse lookup failed, continue with default MMR
@@ -168,39 +170,82 @@ public class UserServiceImpl implements UserService {
             user.setSignature(dto.getSignature());
         if (dto.getRegion() != null)
             user.setRegion(dto.getRegion());
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty())
+            user.setPassword(dto.getPassword());
 
-        // Manual MMR override takes priority
-        if (dto.getMmr() != null && dto.getMmr() > 0) {
-            user.setMmr(dto.getMmr());
-        } else if (dto.getBattleTag() != null && !dto.getBattleTag().isEmpty()) {
-            // Re-fetch MMR from SC2 Pulse if battleTag changed and no manual MMR
-            try {
-                Long characterId = sc2PulseService.findCharacterId(dto.getBattleTag());
-                if (characterId != null) {
-                    user.setCharacterId(characterId);
-                    Integer mmr = sc2PulseService.getMMR(characterId);
-                    if (mmr != null) {
-                        user.setMmr(mmr);
-                    }
-                }
-            } catch (Exception e) {
-                // ignore
-            }
-        }
+        if (dto.getBattleTagCN() != null)
+            user.setBattleTagCN(dto.getBattleTagCN());
+        if (dto.getBattleTagUS() != null)
+            user.setBattleTagUS(dto.getBattleTagUS());
+        if (dto.getBattleTagEU() != null)
+            user.setBattleTagEU(dto.getBattleTagEU());
+        if (dto.getBattleTagKR() != null)
+            user.setBattleTagKR(dto.getBattleTagKR());
+
+        // Always try to sync MMR from SC2 Pulse when BattleTag is updated or profile is saved
+        syncUserMMR(user);
 
         userMapper.update(user);
         user.setPassword(null);
         return Result.success(user);
     }
 
-    @Override
-    public List<User> findMatches(int mmr, int range, String opponentRace) {
-        List<User> matches;
-        if (opponentRace != null && !opponentRace.isEmpty()) {
-            matches = userMapper.findByMmrRangeAndRace(mmr - range, mmr + range, opponentRace);
-        } else {
-            matches = userMapper.findByMmrRange(mmr - range, mmr + range);
+    private void syncUserMMR(User user) {
+        String[] tags = { 
+            user.getBattleTag(), 
+            user.getBattleTagCN(), 
+            user.getBattleTagUS(), 
+            user.getBattleTagEU(), 
+            user.getBattleTagKR() 
+        };
+
+        for (String tag : tags) {
+            if (tag != null && !tag.isEmpty()) {
+                try {
+                    Long characterId = sc2PulseService.findCharacterId(tag);
+                    if (characterId != null) {
+                        user.setCharacterId(characterId);
+                        user.setMmr(sc2PulseService.getMMR(characterId, "LOTV_1V1"));
+                        user.setMmr2v2(sc2PulseService.getMMR(characterId, "LOTV_2V2"));
+                        user.setMmr3v3(sc2PulseService.getMMR(characterId, "LOTV_3V3"));
+                        user.setMmr4v4(sc2PulseService.getMMR(characterId, "LOTV_4V4"));
+                        
+                        // If we successfully found a character and synced MMR, we can stop
+                        // In the future, we might want to aggregate across regions
+                        return;
+                    }
+                } catch (Exception e) {
+                    // ignore sync error for this tag, try next
+                }
+            }
         }
+    }
+
+    @Override
+    public List<User> findMatches(int mmr, int range, String opponentRace, String mode) {
+        int minMmr = mmr - range;
+        int maxMmr = mmr + range;
+        List<User> matches;
+
+        if ("2v2".equalsIgnoreCase(mode)) {
+            matches = (opponentRace != null && !opponentRace.isEmpty())
+                    ? userMapper.findByMmr2v2RangeAndRace(minMmr, maxMmr, opponentRace)
+                    : userMapper.findByMmr2v2Range(minMmr, maxMmr);
+        } else if ("3v3".equalsIgnoreCase(mode)) {
+            matches = (opponentRace != null && !opponentRace.isEmpty())
+                    ? userMapper.findByMmr3v3RangeAndRace(minMmr, maxMmr, opponentRace)
+                    : userMapper.findByMmr3v3Range(minMmr, maxMmr);
+        } else if ("4v4".equalsIgnoreCase(mode)) {
+            matches = (opponentRace != null && !opponentRace.isEmpty())
+                    ? userMapper.findByMmr4v4RangeAndRace(minMmr, maxMmr, opponentRace)
+                    : userMapper.findByMmr4v4Range(minMmr, maxMmr);
+        } else {
+            // Default 1v1
+            matches = (opponentRace != null && !opponentRace.isEmpty())
+                    ? userMapper.findByMmrRangeAndRace(minMmr, maxMmr, opponentRace)
+                    : userMapper.findByMmrRange(minMmr, maxMmr);
+        }
+
         // Don't return passwords
         for (User u : matches) {
             u.setPassword(null);

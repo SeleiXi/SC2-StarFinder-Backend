@@ -1,5 +1,6 @@
 package com.starfinder.controller;
 
+import com.starfinder.dto.Result;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.mapper.UserMapper;
 import com.starfinder.entity.User;
@@ -17,6 +18,32 @@ public class SC2Controller {
 
     @Autowired
     private UserMapper userMapper;
+
+    @GetMapping("/full-mmr")
+    public Result<Map<String, Object>> getFullMMR(@RequestParam String battleTag) {
+        try {
+            Long characterId = sc2PulseService.findCharacterId(battleTag);
+            if (characterId == null) {
+                return Result.error("未找到对应战网ID的角色");
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("battleTag", battleTag);
+            data.put("characterId", characterId);
+
+            Map<String, Integer> mmrs = new LinkedHashMap<>();
+            mmrs.put("1v1", sc2PulseService.getMMR(characterId, "LOTV_1V1"));
+            mmrs.put("2v2", sc2PulseService.getMMR(characterId, "LOTV_2V2"));
+            mmrs.put("3v3", sc2PulseService.getMMR(characterId, "LOTV_3V3"));
+            mmrs.put("4v4", sc2PulseService.getMMR(characterId, "LOTV_4V4"));
+            mmrs.put("Archon", sc2PulseService.getMMR(characterId, "LOTV_ARCHON"));
+
+            data.put("mmrs", mmrs);
+            return Result.success(data);
+        } catch (Exception e) {
+            return Result.error("查询失败: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/search")
     public List<Map<String, Object>> searchCharacters(@RequestParam String name) {

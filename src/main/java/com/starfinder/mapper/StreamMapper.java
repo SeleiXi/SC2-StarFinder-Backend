@@ -1,0 +1,22 @@
+package com.starfinder.mapper;
+
+import com.starfinder.entity.Stream;
+import org.apache.ibatis.annotations.*;
+import java.util.List;
+
+@Mapper
+public interface StreamMapper {
+    @Insert("INSERT INTO streams (name, battle_tag, stream_url, description, mmr, race, platform, user_id) " +
+            "VALUES (#{name}, #{battleTag}, #{streamUrl}, #{description}, #{mmr}, #{race}, #{platform}, #{userId})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insert(Stream stream);
+
+    @Select("SELECT * FROM streams ORDER BY created_at DESC")
+    List<Stream> findAll();
+
+    @Delete("DELETE FROM streams WHERE id = #{id}")
+    void deleteById(Long id);
+
+    @Select("SELECT * FROM streams WHERE battle_tag = #{battleTag}")
+    Stream findByBattleTag(String battleTag);
+}

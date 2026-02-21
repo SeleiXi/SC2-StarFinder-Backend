@@ -20,5 +20,5 @@ public interface UserService {
 
     Result<User> updateProfile(Long userId, ProfileUpdateDTO dto);
 
-    List<User> findMatches(int mmr, int range, String opponentRace);
+    List<User> findMatches(int mmr, int range, String opponentRace, String mode);
 }

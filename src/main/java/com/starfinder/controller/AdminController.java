@@ -35,7 +35,14 @@ public class AdminController {
         if (userId == null)
             return false;
         User user = userMapper.findById(userId);
-        return user != null && "admin".equals(user.getRole());
+        return user != null && ("admin".equals(user.getRole()) || "super_admin".equals(user.getRole()));
+    }
+
+    private boolean isSuperAdmin(Long userId) {
+        if (userId == null)
+            return false;
+        User user = userMapper.findById(userId);
+        return user != null && "super_admin".equals(user.getRole());
     }
 
     // ============ Users CRUD ============
@@ -44,7 +51,9 @@ public class AdminController {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
         List<User> users = userMapper.findAll();
-        users.forEach(u -> u.setPassword(null));
+        // Don't clear password here if the admin is supposed to manage them? 
+        // No, we should return them if requested or have a separate way.
+        // The user said "包括密码". So I'll return passwords for admins.
         return Result.success(users);
     }
 
@@ -53,6 +62,9 @@ public class AdminController {
             @RequestParam Long adminId) {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
+        
+        // Prevent normal admin from updating other admins' profile? 
+        // The requirement is mostly about role change.
         return userService.updateProfile(id, dto);
     }
 
@@ -60,6 +72,17 @@ public class AdminController {
     public Result<Void> deleteUser(@PathVariable Long id, @RequestParam Long adminId) {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
+        
+        User target = userMapper.findById(id);
+        if (target != null && ("admin".equals(target.getRole()) || "super_admin".equals(target.getRole()))) {
+            if (!isSuperAdmin(adminId)) {
+                return Result.BadRequest("普通管理员不能删除其他管理员");
+            }
+            if (target.getId().equals(adminId)) {
+                return Result.BadRequest("不能删除自己");
+            }
+        }
+
         userMapper.deleteById(id);
         return Result.success();
     }
@@ -69,13 +92,40 @@ public class AdminController {
             @RequestParam Long adminId) {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
-        User user = userMapper.findById(id);
-        if (user == null)
+        
+        User target = userMapper.findById(id);
+        if (target == null)
             return Result.BadRequest("用户不存在");
-        user.setRole(role);
-        userMapper.update(user);
-        user.setPassword(null);
-        return Result.success(user);
+
+        if (target.getId().equals(adminId)) {
+            return Result.BadRequest("不能修改自己的角色");
+        }
+
+        boolean targetIsAdmin = "admin".equals(target.getRole()) || "super_admin".equals(target.getRole());
+        boolean targetIsSuperAdmin = "super_admin".equals(target.getRole());
+
+        if (!isSuperAdmin(adminId)) {
+            // Normal admin
+            if (targetIsAdmin) {
+                return Result.BadRequest("普通管理员不能修改其他管理员的角色");
+            }
+            if (!"user".equals(role) && !"admin".equals(role)) {
+                return Result.BadRequest("普通管理员只能设置 user 或 admin 角色");
+            }
+            if ("admin".equals(role)) {
+                // Admin can promote to admin? "管理员不应该能取消掉自己或者其他人的管理员身份"
+                // So admin can promote, but not demote.
+            }
+        } else {
+            // Super admin
+            // Can change anyone's role except self (already checked above)
+            // But maybe prevent removing the last super admin?
+        }
+
+        target.setRole(role);
+        userMapper.update(target);
+        target.setPassword(null);
+        return Result.success(target);
     }
 
     // ============ Cheaters CRUD ============

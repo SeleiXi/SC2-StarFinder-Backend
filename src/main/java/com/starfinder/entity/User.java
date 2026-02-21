@@ -15,6 +15,18 @@ public class User {
     @Column(name = "battle_tag")
     private String battleTag;
 
+    @Column(name = "battle_tag_cn")
+    private String battleTagCN;
+
+    @Column(name = "battle_tag_us")
+    private String battleTagUS;
+
+    @Column(name = "battle_tag_eu")
+    private String battleTagEU;
+
+    @Column(name = "battle_tag_kr")
+    private String battleTagKR;
+
     @Column(name = "character_id")
     private Long characterId;
 
@@ -22,6 +34,15 @@ public class User {
     private String race;
 
     private Integer mmr;
+
+    @Column(name = "mmr_2v2")
+    private Integer mmr2v2;
+
+    @Column(name = "mmr_3v3")
+    private Integer mmr3v3;
+
+    @Column(name = "mmr_4v4")
+    private Integer mmr4v4;
 
     @Column(name = "email")
     private String email;
@@ -65,6 +86,38 @@ public class User {
         this.battleTag = battleTag;
     }
 
+    public String getBattleTagCN() {
+        return battleTagCN;
+    }
+
+    public void setBattleTagCN(String battleTagCN) {
+        this.battleTagCN = battleTagCN;
+    }
+
+    public String getBattleTagUS() {
+        return battleTagUS;
+    }
+
+    public void setBattleTagUS(String battleTagUS) {
+        this.battleTagUS = battleTagUS;
+    }
+
+    public String getBattleTagEU() {
+        return battleTagEU;
+    }
+
+    public void setBattleTagEU(String battleTagEU) {
+        this.battleTagEU = battleTagEU;
+    }
+
+    public String getBattleTagKR() {
+        return battleTagKR;
+    }
+
+    public void setBattleTagKR(String battleTagKR) {
+        this.battleTagKR = battleTagKR;
+    }
+
     public Long getCharacterId() {
         return characterId;
     }
@@ -87,6 +140,30 @@ public class User {
 
     public void setMmr(Integer mmr) {
         this.mmr = mmr;
+    }
+
+    public Integer getMmr2v2() {
+        return mmr2v2;
+    }
+
+    public void setMmr2v2(Integer mmr2v2) {
+        this.mmr2v2 = mmr2v2;
+    }
+
+    public Integer getMmr3v3() {
+        return mmr3v3;
+    }
+
+    public void setMmr3v3(Integer mmr3v3) {
+        this.mmr3v3 = mmr3v3;
+    }
+
+    public Integer getMmr4v4() {
+        return mmr4v4;
+    }
+
+    public void setMmr4v4(Integer mmr4v4) {
+        this.mmr4v4 = mmr4v4;
     }
 
     public String getEmail() {
