@@ -76,6 +76,9 @@ public class SC2Controller {
             Object ratingObj = team.get("rating");
             int rating = (ratingObj instanceof Number) ? ((Number) ratingObj).intValue() : 0;
             
+            // Skip unknown/unranked data (Task 3)
+            if (rating <= 0) continue;
+            
             // Stats aggregation
             totalGames += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
             if (rating > bestAllMmr) {
@@ -162,7 +165,10 @@ public class SC2Controller {
         // 1. Fetch and flatten SC2 Pulse streams
         try {
             List<Map<String, Object>> rawStreams = sc2PulseService.getStreams();
+            // Limit to top 20 for speed (Task 8)
+            int count = 0;
             for (Map<String, Object> entry : rawStreams) {
+                if (count++ >= 20) break;
                 try {
                     Map<String, Object> flat = new HashMap<>();
 

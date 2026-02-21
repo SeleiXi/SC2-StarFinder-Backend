@@ -29,6 +29,9 @@ public interface UserMapper {
     @Select("SELECT * FROM users WHERE commander = #{commander}")
     List<User> findByCommander(@Param("commander") String commander);
 
+    @Select("SELECT * FROM users WHERE commander IS NOT NULL AND commander != ''")
+    List<User> findAllWithCommander();
+
     @Select("SELECT * FROM users WHERE mmr BETWEEN #{minMmr} AND #{maxMmr}")
     List<User> findByMmrRange(@Param("minMmr") int minMmr, @Param("maxMmr") int maxMmr);
 
@@ -57,7 +60,7 @@ public interface UserMapper {
     List<User> findByMmr4v4RangeAndRace(@Param("minMmr") int minMmr, @Param("maxMmr") int maxMmr,
             @Param("race") String race);
 
-    @Update("UPDATE users SET name=#{name}, battle_tag=#{battleTag}, battle_tag_cn=#{battleTagCN}, battle_tag_us=#{battleTagUS}, battle_tag_eu=#{battleTagEU}, battle_tag_kr=#{battleTagKR}, character_id=#{characterId}, race=#{race}, commander=#{commander}, " +
+    @Update("UPDATE users SET battle_tag=#{battleTag}, battle_tag_cn=#{battleTagCN}, battle_tag_us=#{battleTagUS}, battle_tag_eu=#{battleTagEU}, battle_tag_kr=#{battleTagKR}, character_id=#{characterId}, race=#{race}, commander=#{commander}, " +
             "mmr=#{mmr}, mmr_2v2=#{mmr2v2}, mmr_3v3=#{mmr3v3}, mmr_4v4=#{mmr4v4}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role} WHERE id=#{id}")
     void update(User user);
 

@@ -56,11 +56,8 @@ public class UserServiceImpl implements UserService {
         user.setEmail(registerDTO.getEmail());
         user.setPassword(registerDTO.getPassword());
         
-        // Use email as name if not provided
-        String name = registerDTO.getName();
-        if (name == null || name.trim().isEmpty()) {
-            name = registerDTO.getEmail().split("@")[0];
-        }
+        // Use email as name
+        String name = registerDTO.getEmail().split("@")[0];
         user.setName(name.trim());
         
         user.setBattleTag(registerDTO.getBattleTag());
@@ -156,8 +153,6 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("用户不存在");
         }
 
-        if (dto.getName() != null)
-            user.setName(dto.getName());
         if (dto.getBattleTag() != null)
             user.setBattleTag(dto.getBattleTag());
         if (dto.getRace() != null)
@@ -235,7 +230,7 @@ public class UserServiceImpl implements UserService {
             // Task 6: Match by commander
             List<User> matches = (opponentRace != null && !opponentRace.isEmpty())
                     ? userMapper.findByCommander(opponentRace)
-                    : userMapper.findAll();
+                    : userMapper.findAllWithCommander();
             for (User u : matches) u.setPassword(null);
             return matches;
         }
