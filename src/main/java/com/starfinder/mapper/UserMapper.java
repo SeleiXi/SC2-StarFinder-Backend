@@ -20,6 +20,9 @@ public interface UserMapper {
     @Select("SELECT * FROM users WHERE phone_number = #{phoneNumber}")
     User findByPhoneNumber(String phoneNumber);
 
+    @Select("SELECT * FROM users WHERE name = #{name}")
+    User findByName(String name);
+
     @Select("SELECT * FROM users WHERE battle_tag = #{battleTag}")
     User findByBattleTag(String battleTag);
 

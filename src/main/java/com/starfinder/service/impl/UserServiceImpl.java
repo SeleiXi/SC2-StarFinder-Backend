@@ -25,15 +25,25 @@ public class UserServiceImpl implements UserService {
     @Override
     public Result<User> createUser(RegisterDTO registerDTO) {
         // Check if phone number already exists
-        User existing = userMapper.findByPhoneNumber(registerDTO.getPhoneNumber());
-        if (existing != null) {
+        User existingPhone = userMapper.findByPhoneNumber(registerDTO.getPhoneNumber());
+        if (existingPhone != null) {
             return Result.BadRequest("该手机号已注册");
+        }
+
+        // Check if name (nickname) already exists
+        if (registerDTO.getName() != null && !registerDTO.getName().trim().isEmpty()) {
+            User existingName = userMapper.findByName(registerDTO.getName());
+            if (existingName != null) {
+                return Result.BadRequest("该昵称已被使用");
+            }
+        } else {
+            return Result.BadRequest("昵称不能为空");
         }
 
         User user = new User();
         user.setPhoneNumber(registerDTO.getPhoneNumber());
         user.setPassword(registerDTO.getPassword());
-        user.setName(registerDTO.getName() != null ? registerDTO.getName() : "未命名");
+        user.setName(registerDTO.getName().trim());
         user.setBattleTag(registerDTO.getBattleTag());
         user.setQq(registerDTO.getQq());
         user.setRegion(registerDTO.getRegion() != null ? registerDTO.getRegion() : "US");
@@ -64,9 +74,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result<User> verifyUser(RegisterDTO loginDTO) {
-        String userPhoneNum = loginDTO.getPhoneNumber();
+        String identifier = loginDTO.getPhoneNumber(); // Still using getPhoneNumber as the field, but it can be a name
         String password = loginDTO.getPassword();
-        User user = userMapper.findByPhoneNumber(userPhoneNum);
+        
+        // Try to find by phone number first
+        User user = userMapper.findByPhoneNumber(identifier);
+        
+        // If not found by phone number, try to find by name
+        if (user == null) {
+            user = userMapper.findByName(identifier);
+        }
+
         if (user == null) {
             return Result.BadRequest("用户不存在");
         }
