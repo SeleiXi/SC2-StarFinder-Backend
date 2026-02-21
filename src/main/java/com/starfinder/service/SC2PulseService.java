@@ -4,15 +4,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import com.starfinder.mapper.UserMapper;
+import com.starfinder.entity.User;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class SC2PulseService {
+
+    @Autowired
+    private UserMapper userMapper;
 
     private final RestTemplate restTemplate;
 
@@ -80,6 +89,98 @@ public class SC2PulseService {
             }
         }
         return null;
+    }
+
+    /**
+     * Get 1v1 MMR for a character by race
+     */
+    public Integer getMMRByRace(Long characterId, String race) {
+        List<Map<String, Object>> teams = getCharacterTeams(characterId, "LOTV_1V1");
+        for (Map<String, Object> team : teams) {
+            List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
+            if (members != null && !members.isEmpty()) {
+                Object playerRace = members.get(0).get("favoriteRace");
+                if (playerRace == null)
+                    playerRace = members.get(0).get("race");
+                if (race.equalsIgnoreCase(String.valueOf(playerRace))) {
+                    Object rating = team.get("rating");
+                    if (rating instanceof Number) {
+                        return ((Number) rating).intValue();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Daily update for all users in database
+     * Runs at 4 AM every day
+     */
+    @Scheduled(cron = "0 0 4 * * *")
+    public void updateAllUsersMMR() {
+        List<User> users = userMapper.findAll();
+        for (User user : users) {
+            updateUserMMR(user);
+        }
+    }
+
+    public void updateUserMMR(User user) {
+        String battleTag = user.getBattleTag();
+        if (battleTag == null || !battleTag.contains("#"))
+            return;
+
+        Long charId = user.getCharacterId();
+        if (charId == null) {
+            charId = findCharacterId(battleTag);
+            if (charId != null) {
+                user.setCharacterId(charId);
+            } else {
+                return;
+            }
+        }
+
+        // Update 1v1 MMR (Highest among all races)
+        List<Map<String, Object>> teams1v1 = getCharacterTeams(charId, "LOTV_1V1");
+        int max1v1 = 0;
+        String bestRace = user.getRace();
+        for (Map<String, Object> team : teams1v1) {
+            Object ratingObj = team.get("rating");
+            if (ratingObj instanceof Number) {
+                int r = ((Number) ratingObj).intValue();
+                if (r > max1v1) {
+                    max1v1 = r;
+                    // Try to get race
+                    List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
+                    if (members != null && !members.isEmpty()) {
+                        Object race = members.get(0).get("favoriteRace");
+                        if (race == null)
+                            race = members.get(0).get("race");
+                        if (race != null)
+                            bestRace = String.valueOf(race).substring(0, 1).toUpperCase();
+                    }
+                }
+            }
+        }
+        if (max1v1 > 0) {
+            user.setMmr(max1v1);
+            user.setRace(bestRace);
+        }
+
+        // Update 2v2, 3v3, 4v4
+        Integer mmr2v2 = getMMR(charId, "LOTV_2V2");
+        if (mmr2v2 != null)
+            user.setMmr2v2(mmr2v2);
+
+        Integer mmr3v3 = getMMR(charId, "LOTV_3V3");
+        if (mmr3v3 != null)
+            user.setMmr3v3(mmr3v3);
+
+        Integer mmr4v4 = getMMR(charId, "LOTV_4V4");
+        if (mmr4v4 != null)
+            user.setMmr4v4(mmr4v4);
+
+        userMapper.update(user);
     }
 
     /**

@@ -20,29 +20,123 @@ public class SC2Controller {
     private UserMapper userMapper;
 
     @GetMapping("/full-mmr")
-    public Result<Map<String, Object>> getFullMMR(@RequestParam String battleTag) {
+    public Result<List<Map<String, Object>>> getFullMMR(@RequestParam String battleTag) {
         try {
-            Long characterId = sc2PulseService.findCharacterId(battleTag);
-            if (characterId == null) {
-                return Result.error("未找到对应战网ID的角色");
+            List<Map<String, Object>> searchResults = new ArrayList<>();
+            
+            if (battleTag.contains("#")) {
+                Long characterId = sc2PulseService.findCharacterId(battleTag);
+                if (characterId != null) {
+                    searchResults.add(buildCharacterData(characterId, battleTag));
+                }
+            } else {
+                // Search by name only, return multiple results
+                List<Map<String, Object>> characters = sc2PulseService.searchCharacters(battleTag);
+                for (Map<String, Object> charInfo : characters) {
+                    Object idObj = charInfo.get("id");
+                    if (idObj != null) {
+                        Long charId = ((Number) idObj).longValue();
+                        // For name search, we might not have the full battleTag yet, 
+                        // buildCharacterData will try to find it
+                        searchResults.add(buildCharacterData(charId, null));
+                    }
+                }
             }
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("battleTag", battleTag);
-            data.put("characterId", characterId);
+            if (searchResults.isEmpty()) {
+                return Result.error("未找到对应角色");
+            }
 
-            Map<String, Integer> mmrs = new LinkedHashMap<>();
-            mmrs.put("1v1", sc2PulseService.getMMR(characterId, "LOTV_1V1"));
-            mmrs.put("2v2", sc2PulseService.getMMR(characterId, "LOTV_2V2"));
-            mmrs.put("3v3", sc2PulseService.getMMR(characterId, "LOTV_3V3"));
-            mmrs.put("4v4", sc2PulseService.getMMR(characterId, "LOTV_4V4"));
-            mmrs.put("Archon", sc2PulseService.getMMR(characterId, "LOTV_ARCHON"));
-
-            data.put("mmrs", mmrs);
-            return Result.success(data);
+            return Result.success(searchResults);
         } catch (Exception e) {
             return Result.error("查询失败: " + e.getMessage());
         }
+    }
+
+    private Map<String, Object> buildCharacterData(Long characterId, String battleTag) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("characterId", characterId);
+        
+        // Use all queues to get better summary
+        List<Map<String, Object>> allTeams = sc2PulseService.getCharacterTeams(characterId, null);
+        
+        String finalBattleTag = battleTag;
+        String region = "Unknown";
+        int totalGames = 0;
+        int bestAllMmr = 0;
+        String bestLeague = "None";
+        Integer last1v1Mmr = null;
+        int last1v1Games = 0;
+        
+        Map<String, Object> mmrGroups = new LinkedHashMap<>();
+        List<Map<String, Object>> v1v1Results = new ArrayList<>();
+
+        for (Map<String, Object> team : allTeams) {
+            Object queueType = team.get("queueType");
+            Object ratingObj = team.get("rating");
+            int rating = (ratingObj instanceof Number) ? ((Number) ratingObj).intValue() : 0;
+            
+            // Stats aggregation
+            totalGames += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
+            if (rating > bestAllMmr) {
+                bestAllMmr = rating;
+                Object league = team.get("league");
+                if (league instanceof Map) {
+                    bestLeague = String.valueOf(((Map<?,?>)league).get("type"));
+                }
+            }
+            if (region.equals("Unknown")) {
+                region = String.valueOf(team.getOrDefault("region", "Unknown"));
+            }
+
+            // Extract BattleTag if not provided
+            if (finalBattleTag == null) {
+                Object membersObj = team.get("members");
+                if (membersObj instanceof List && !((List<?>)membersObj).isEmpty()) {
+                    Object member = ((List<?>)membersObj).get(0);
+                    if (member instanceof Map) {
+                        Object account = ((Map<?,?>)member).get("account");
+                        if (account instanceof Map) {
+                            finalBattleTag = String.valueOf(((Map<?,?>)account).get("battleTag"));
+                        }
+                    }
+                }
+            }
+
+            // Grouping for 1v1 vs Teams
+            if (Integer.valueOf(201).equals(queueType)) {
+                last1v1Mmr = rating;
+                last1v1Games += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
+                
+                Map<String, Object> t = new HashMap<>();
+                t.put("rating", rating);
+                List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
+                if (members != null && !members.isEmpty()) {
+                    Object race = members.get(0).get("favoriteRace");
+                    if (race == null) race = members.get(0).get("race");
+                    t.put("race", race);
+                }
+                v1v1Results.add(t);
+            } else if (Integer.valueOf(202).equals(queueType)) {
+                mmrGroups.put("2v2", rating);
+            } else if (Integer.valueOf(203).equals(queueType)) {
+                mmrGroups.put("3v3", rating);
+            } else if (Integer.valueOf(204).equals(queueType)) {
+                mmrGroups.put("4v4", rating);
+            }
+        }
+
+        data.put("battleTag", finalBattleTag != null ? finalBattleTag : "Unknown#" + characterId);
+        data.put("region", region);
+        data.put("totalGames", totalGames);
+        data.put("bestAllMmr", bestAllMmr);
+        data.put("bestLeague", bestLeague);
+        data.put("last1v1Mmr", last1v1Mmr);
+        data.put("last1v1Games", last1v1Games);
+        data.put("mmrGroups", mmrGroups);
+        mmrGroups.put("1v1", v1v1Results);
+
+        return data;
     }
 
     @GetMapping("/search")
@@ -148,6 +242,16 @@ public class SC2Controller {
         }
 
         return result;
+    }
+
+    @PostMapping("/update-all-mmr")
+    public Result<String> updateAllMMR() {
+        try {
+            sc2PulseService.updateAllUsersMMR();
+            return Result.success("已启动全量MMR更新");
+        } catch (Exception e) {
+            return Result.error("更新失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/character-id")
