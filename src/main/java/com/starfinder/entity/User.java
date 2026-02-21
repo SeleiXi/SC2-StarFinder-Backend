@@ -23,8 +23,8 @@ public class User {
 
     private Integer mmr;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
+    @Column(name = "email")
+    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -89,12 +89,12 @@ public class User {
         this.mmr = mmr;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public String getEmail() {
+        return email;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {

@@ -10,6 +10,7 @@ import com.starfinder.entity.User;
 import com.starfinder.mapper.UserMapper;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.UserService;
+import com.starfinder.service.EmailService;
 
 import java.util.List;
 
@@ -22,12 +23,28 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private SC2PulseService sc2PulseService;
 
+    @Autowired
+    private EmailService emailService;
+
     @Override
     public Result<User> createUser(RegisterDTO registerDTO) {
-        // Check if phone number already exists
-        User existingPhone = userMapper.findByPhoneNumber(registerDTO.getPhoneNumber());
-        if (existingPhone != null) {
-            return Result.BadRequest("该手机号已注册");
+        // Enforce email verification for registration
+        if (registerDTO.getEmail() == null || registerDTO.getEmail().isEmpty()) {
+            return Result.BadRequest("电子邮箱不能为空");
+        }
+        if (registerDTO.getEmailCode() == null || registerDTO.getEmailCode().isEmpty()) {
+            return Result.BadRequest("验证码不能为空");
+        }
+        
+        // Check verification code
+        if (!emailService.verifyCode(registerDTO.getEmail(), registerDTO.getEmailCode())) {
+            return Result.BadRequest("验证码无效或已过期");
+        }
+
+        // Check if email already exists
+        User existingEmail = userMapper.findByEmail(registerDTO.getEmail());
+        if (existingEmail != null) {
+            return Result.BadRequest("该邮箱已注册");
         }
 
         // Check if name (nickname) already exists
@@ -41,7 +58,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = new User();
-        user.setPhoneNumber(registerDTO.getPhoneNumber());
+        user.setEmail(registerDTO.getEmail());
         user.setPassword(registerDTO.getPassword());
         user.setName(registerDTO.getName().trim());
         user.setBattleTag(registerDTO.getBattleTag());
@@ -74,13 +91,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result<User> verifyUser(RegisterDTO loginDTO) {
-        String identifier = loginDTO.getPhoneNumber(); // Still using getPhoneNumber as the field, but it can be a name
+        String identifier = loginDTO.getEmail(); // Use email as identifier
         String password = loginDTO.getPassword();
         
-        // Try to find by phone number first
-        User user = userMapper.findByPhoneNumber(identifier);
-        
-        // If not found by phone number, try to find by name
+        // Try to find by email
+        User user = userMapper.findByEmail(identifier);
+
+        // If not found, try to find by name
         if (user == null) {
             user = userMapper.findByName(identifier);
         }
@@ -93,6 +110,32 @@ public class UserServiceImpl implements UserService {
             return Result.success(user);
         }
         return Result.BadRequest("密码错误");
+    }
+
+    @Override
+    public Result<User> verifyUserByCode(String email, String code) {
+        if (!emailService.verifyCode(email, code)) {
+            return Result.BadRequest("验证码错误或已过期");
+        }
+        User user = userMapper.findByEmail(email);
+        if (user == null) {
+            return Result.BadRequest("用户不存在");
+        }
+        user.setPassword(null);
+        return Result.success(user);
+    }
+
+    @Override
+    public Result<String> resetPassword(String email, String code, String newPassword) {
+        if (!emailService.verifyCode(email, code)) {
+            return Result.BadRequest("验证码错误或已过期");
+        }
+        User user = userMapper.findByEmail(email);
+        if (user == null) {
+            return Result.BadRequest("该邮箱未注册");
+        }
+        userMapper.updatePassword(email, newPassword);
+        return Result.success("密码已重置");
     }
 
     @Override

@@ -1,19 +1,28 @@
 package com.starfinder.dto;
 
 public class RegisterDTO {
-    private String phoneNumber;
+    private String email;
+    private String emailCode;
     private String password;
     private String name;
     private String battleTag;
     private String qq;
     private String region;
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public String getEmail() {
+        return email;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getEmailCode() {
+        return emailCode;
+    }
+
+    public void setEmailCode(String emailCode) {
+        this.emailCode = emailCode;
     }
 
     public String getPassword() {

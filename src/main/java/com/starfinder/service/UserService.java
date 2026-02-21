@@ -12,6 +12,10 @@ public interface UserService {
 
     Result<User> verifyUser(RegisterDTO registerDTO);
 
+    Result<User> verifyUserByCode(String email, String code);
+
+    Result<String> resetPassword(String email, String code, String newPassword);
+
     User getUserById(Long id);
 
     Result<User> updateProfile(Long userId, ProfileUpdateDTO dto);

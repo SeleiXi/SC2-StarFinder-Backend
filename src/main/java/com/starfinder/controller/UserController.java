@@ -27,6 +27,16 @@ public class UserController {
         return userService.verifyUser(loginDTO);
     }
 
+    @PostMapping("/login/code")
+    public Result<User> loginByCode(@RequestParam String email, @RequestParam String code) {
+        return userService.verifyUserByCode(email, code);
+    }
+
+    @PostMapping("/password/reset")
+    public Result<String> resetPassword(@RequestParam String email, @RequestParam String code, @RequestParam String newPassword) {
+        return userService.resetPassword(email, code, newPassword);
+    }
+
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
         return userService.getUserById(id);

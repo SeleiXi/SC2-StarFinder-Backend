@@ -8,17 +8,17 @@ import java.util.List;
 @Mapper
 public interface UserMapper {
 
-    @Insert("INSERT INTO users (name, battle_tag, character_id, race, mmr, phone_number, password, qq, stream_url, signature, region, role) "
+    @Insert("INSERT INTO users (name, battle_tag, character_id, race, mmr, email, password, qq, stream_url, signature, region, role) "
             +
-            "VALUES (#{name}, #{battleTag}, #{characterId}, #{race}, #{mmr}, #{phoneNumber}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region}, #{role})")
+            "VALUES (#{name}, #{battleTag}, #{characterId}, #{race}, #{mmr}, #{email}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region}, #{role})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(User user);
 
     @Select("SELECT * FROM users WHERE id = #{id}")
     User findById(Long id);
 
-    @Select("SELECT * FROM users WHERE phone_number = #{phoneNumber}")
-    User findByPhoneNumber(String phoneNumber);
+    @Select("SELECT * FROM users WHERE email = #{email}")
+    User findByEmail(String email);
 
     @Select("SELECT * FROM users WHERE name = #{name}")
     User findByName(String name);
@@ -36,6 +36,9 @@ public interface UserMapper {
     @Update("UPDATE users SET name=#{name}, battle_tag=#{battleTag}, character_id=#{characterId}, race=#{race}, " +
             "mmr=#{mmr}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role} WHERE id=#{id}")
     void update(User user);
+
+    @Update("UPDATE users SET password=#{password} WHERE email=#{email}")
+    void updatePassword(@Param("email") String email, @Param("password") String password);
 
     @Select("SELECT * FROM users")
     List<User> findAll();
