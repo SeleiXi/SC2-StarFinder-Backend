@@ -38,6 +38,6 @@ app:
     email: ${APP_SYSTEM_EMAIL:admin@pcecclub.cn}
 
 ai:
-  api-key: ${AI_API_KEY}
+  api-key: ${AI_API_KEY:NONE}
   api-url: ${AI_API_URL:https://api.deepseek.com/chat/completions}
   model: ${AI_MODEL:deepseek-chat}
