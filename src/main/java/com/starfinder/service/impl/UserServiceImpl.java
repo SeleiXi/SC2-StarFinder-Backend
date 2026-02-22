@@ -56,13 +56,6 @@ public class UserServiceImpl implements UserService {
         user.setEmail(registerDTO.getEmail());
         user.setPassword(registerDTO.getPassword());
         
-        // Use email as name if not provided
-        String name = registerDTO.getName();
-        if (name == null || name.trim().isEmpty()) {
-            name = registerDTO.getEmail().split("@")[0];
-        }
-        user.setName(name.trim());
-        
         user.setBattleTag(registerDTO.getBattleTag());
         user.setQq(registerDTO.getQq());
         user.setRegion(registerDTO.getRegion() != null ? registerDTO.getRegion() : "US");
@@ -99,9 +92,9 @@ public class UserServiceImpl implements UserService {
         // Try to find by email
         User user = userMapper.findByEmail(identifier);
 
-        // If not found, try to find by name
+        // If not found, try to find by battleTag
         if (user == null) {
-            user = userMapper.findByName(identifier);
+            user = userMapper.findByBattleTag(identifier);
         }
 
         if (user == null) {
@@ -156,8 +149,6 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("用户不存在");
         }
 
-        if (dto.getName() != null)
-            user.setName(dto.getName());
         if (dto.getBattleTag() != null)
             user.setBattleTag(dto.getBattleTag());
         if (dto.getRace() != null)
@@ -189,6 +180,10 @@ public class UserServiceImpl implements UserService {
         
         // Manual MMR overrides sync (Task 5)
         if (dto.getMmr() != null) user.setMmr(dto.getMmr());
+        if (dto.getMmrTerran() != null) user.setMmrTerran(dto.getMmrTerran());
+        if (dto.getMmrZerg() != null) user.setMmrZerg(dto.getMmrZerg());
+        if (dto.getMmrProtoss() != null) user.setMmrProtoss(dto.getMmrProtoss());
+        if (dto.getMmrRandom() != null) user.setMmrRandom(dto.getMmrRandom());
         if (dto.getMmr2v2() != null) user.setMmr2v2(dto.getMmr2v2());
         if (dto.getMmr3v3() != null) user.setMmr3v3(dto.getMmr3v3());
         if (dto.getMmr4v4() != null) user.setMmr4v4(dto.getMmr4v4());
@@ -257,10 +252,18 @@ public class UserServiceImpl implements UserService {
                     ? userMapper.findByMmr4v4RangeAndRace(minMmr, maxMmr, opponentRace)
                     : userMapper.findByMmr4v4Range(minMmr, maxMmr);
         } else {
-            // Default 1v1
-            matches = (opponentRace != null && !opponentRace.isEmpty())
-                    ? userMapper.findByMmrRangeAndRace(minMmr, maxMmr, opponentRace)
-                    : userMapper.findByMmrRange(minMmr, maxMmr);
+            // Default 1v1 - use per-race MMR column when race is specified
+            if (opponentRace != null && !opponentRace.isEmpty()) {
+                switch (opponentRace.toUpperCase()) {
+                    case "T": matches = userMapper.findByMmrTerranRange(minMmr, maxMmr); break;
+                    case "Z": matches = userMapper.findByMmrZergRange(minMmr, maxMmr); break;
+                    case "P": matches = userMapper.findByMmrProtossRange(minMmr, maxMmr); break;
+                    case "R": matches = userMapper.findByMmrRandomRange(minMmr, maxMmr); break;
+                    default:  matches = userMapper.findByMmrRangeAndRace(minMmr, maxMmr, opponentRace); break;
+                }
+            } else {
+                matches = userMapper.findByMmrRange(minMmr, maxMmr);
+            }
         }
 
         // Don't return passwords

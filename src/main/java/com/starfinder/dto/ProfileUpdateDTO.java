@@ -1,7 +1,6 @@
 package com.starfinder.dto;
 
 public class ProfileUpdateDTO {
-    private String name;
     private String battleTag;
     private String battleTagCN;
     private String battleTagUS;
@@ -14,6 +13,10 @@ public class ProfileUpdateDTO {
     private String signature;
     private String region;
     private Integer mmr;
+    private Integer mmrTerran;
+    private Integer mmrZerg;
+    private Integer mmrProtoss;
+    private Integer mmrRandom;
     private Integer mmr2v2;
     private Integer mmr3v3;
     private Integer mmr4v4;
@@ -33,6 +36,38 @@ public class ProfileUpdateDTO {
 
     public void setMmr(Integer mmr) {
         this.mmr = mmr;
+    }
+
+    public Integer getMmrTerran() {
+        return mmrTerran;
+    }
+
+    public void setMmrTerran(Integer mmrTerran) {
+        this.mmrTerran = mmrTerran;
+    }
+
+    public Integer getMmrZerg() {
+        return mmrZerg;
+    }
+
+    public void setMmrZerg(Integer mmrZerg) {
+        this.mmrZerg = mmrZerg;
+    }
+
+    public Integer getMmrProtoss() {
+        return mmrProtoss;
+    }
+
+    public void setMmrProtoss(Integer mmrProtoss) {
+        this.mmrProtoss = mmrProtoss;
+    }
+
+    public Integer getMmrRandom() {
+        return mmrRandom;
+    }
+
+    public void setMmrRandom(Integer mmrRandom) {
+        this.mmrRandom = mmrRandom;
     }
 
     public Integer getMmr2v2() {
@@ -57,14 +92,6 @@ public class ProfileUpdateDTO {
 
     public void setMmr4v4(Integer mmr4v4) {
         this.mmr4v4 = mmr4v4;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getBattleTag() {

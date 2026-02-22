@@ -53,6 +53,13 @@ public class SC2Controller {
         }
     }
 
+    private static final Map<Integer, String> LEAGUE_MAP = Map.of(
+        0, "青铜", 1, "白银", 2, "黄金", 3, "铂金", 4, "钻石", 5, "大师", 6, "宗师"
+    );
+    private static final Map<Object, String> REGION_MAP = Map.of(
+        1, "美服 (NA)", 2, "欧服 (EU)", 3, "韩服 (KR)", "1", "美服 (NA)", "2", "欧服 (EU)", "3", "韩服 (KR)"
+    );
+
     private Map<String, Object> buildCharacterData(Long characterId, String battleTag) {
         Map<String, Object> data = new HashMap<>();
         data.put("characterId", characterId);
@@ -69,24 +76,34 @@ public class SC2Controller {
         int last1v1Games = 0;
         
         Map<String, Object> mmrGroups = new LinkedHashMap<>();
-        List<Map<String, Object>> v1v1Results = new ArrayList<>();
+        // bestPerRace: race -> best rating for 1v1 deduplication
+        Map<String, Integer> bestPerRace = new LinkedHashMap<>();
 
         for (Map<String, Object> team : allTeams) {
             Object queueType = team.get("queueType");
             Object ratingObj = team.get("rating");
             int rating = (ratingObj instanceof Number) ? ((Number) ratingObj).intValue() : 0;
             
-            // Stats aggregation
+            // Stats aggregation (only LOTV queues: 201-204)
+            int qt = (queueType instanceof Number) ? ((Number) queueType).intValue() : -1;
+            if (qt < 201 || qt > 204) continue; // Skip non-LOTV / unknown queues
+
             totalGames += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
             if (rating > bestAllMmr) {
                 bestAllMmr = rating;
                 Object league = team.get("league");
                 if (league instanceof Map) {
-                    bestLeague = String.valueOf(((Map<?,?>)league).get("type"));
+                    Object leagueType = ((Map<?,?>)league).get("type");
+                    if (leagueType instanceof Number) {
+                        bestLeague = LEAGUE_MAP.getOrDefault(((Number)leagueType).intValue(), String.valueOf(leagueType));
+                    } else {
+                        bestLeague = String.valueOf(leagueType);
+                    }
                 }
             }
-            if (region.equals("Unknown")) {
-                region = String.valueOf(team.getOrDefault("region", "Unknown"));
+            if ("Unknown".equals(region)) {
+                Object rawRegion = team.get("region");
+                region = REGION_MAP.getOrDefault(rawRegion, String.valueOf(rawRegion));
             }
 
             // Extract BattleTag if not provided
@@ -104,27 +121,45 @@ public class SC2Controller {
             }
 
             // Grouping for 1v1 vs Teams
-            if (Integer.valueOf(201).equals(queueType)) {
-                last1v1Mmr = rating;
+            if (qt == 201) {
                 last1v1Games += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
                 
-                Map<String, Object> t = new HashMap<>();
-                t.put("rating", rating);
                 List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
                 if (members != null && !members.isEmpty()) {
-                    Object race = members.get(0).get("favoriteRace");
-                    if (race == null) race = members.get(0).get("race");
-                    t.put("race", race);
+                    Object raceRaw = members.get(0).get("favoriteRace");
+                    if (raceRaw == null) raceRaw = members.get(0).get("race");
+                    String raceStr = raceRaw != null ? String.valueOf(raceRaw).toUpperCase() : null;
+                    // Filter out null, empty, or UNKNOWN races
+                    if (raceStr != null && !raceStr.isEmpty() && !raceStr.equals("NULL") && !raceStr.equals("UNKNOWN")) {
+                        // Deduplicate by race: keep highest MMR
+                        bestPerRace.merge(raceStr, rating, Math::max);
+                        if (last1v1Mmr == null || rating > last1v1Mmr) {
+                            last1v1Mmr = rating;
+                        }
+                    }
                 }
-                v1v1Results.add(t);
-            } else if (Integer.valueOf(202).equals(queueType)) {
-                mmrGroups.put("2v2", rating);
-            } else if (Integer.valueOf(203).equals(queueType)) {
-                mmrGroups.put("3v3", rating);
-            } else if (Integer.valueOf(204).equals(queueType)) {
-                mmrGroups.put("4v4", rating);
+            } else if (qt == 202) {
+                if (!mmrGroups.containsKey("2v2") || rating > (int)mmrGroups.get("2v2"))
+                    mmrGroups.put("2v2", rating);
+            } else if (qt == 203) {
+                if (!mmrGroups.containsKey("3v3") || rating > (int)mmrGroups.get("3v3"))
+                    mmrGroups.put("3v3", rating);
+            } else if (qt == 204) {
+                if (!mmrGroups.containsKey("4v4") || rating > (int)mmrGroups.get("4v4"))
+                    mmrGroups.put("4v4", rating);
             }
         }
+
+        // Build deduplicated, sorted 1v1 results (by descending rating)
+        List<Map<String, Object>> v1v1Results = new ArrayList<>();
+        bestPerRace.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .forEach(e -> {
+                Map<String, Object> t = new HashMap<>();
+                t.put("race", e.getKey());
+                t.put("rating", e.getValue());
+                v1v1Results.add(t);
+            });
 
         data.put("battleTag", finalBattleTag != null ? finalBattleTag : "Unknown#" + characterId);
         data.put("region", region);
@@ -154,9 +189,18 @@ public class SC2Controller {
         return Map.of("error", "No data found");
     }
 
+    private List<Map<String, Object>> cachedStreams = null;
+    private long lastStreamsFetchTime = 0;
+    private static final long STREAMS_CACHE_DURATION_MS = 60000; // 1 minute cache
+
     @SuppressWarnings("unchecked")
     @GetMapping("/streams")
     public List<Map<String, Object>> getStreams() {
+        long currentTime = System.currentTimeMillis();
+        if (cachedStreams != null && (currentTime - lastStreamsFetchTime) < STREAMS_CACHE_DURATION_MS) {
+            return cachedStreams;
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
 
         // 1. Fetch and flatten SC2 Pulse streams
@@ -228,7 +272,7 @@ public class SC2Controller {
             for (User u : allUsers) {
                 if (u.getStreamUrl() != null && !u.getStreamUrl().isEmpty()) {
                     Map<String, Object> flat = new HashMap<>();
-                    flat.put("userName", u.getName());
+                    flat.put("userName", u.getBattleTag() != null ? u.getBattleTag() : u.getEmail());
                     flat.put("url", u.getStreamUrl());
                     flat.put("streamUrl", u.getStreamUrl());
                     flat.put("rating", u.getMmr());
@@ -240,6 +284,9 @@ public class SC2Controller {
             }
         } catch (Exception ignored) {
         }
+
+        cachedStreams = result;
+        lastStreamsFetchTime = currentTime;
 
         return result;
     }

@@ -36,6 +36,8 @@ public class AIController {
 
     @PostMapping("/query")
     public Result<String> askAI(@RequestBody Map<String, String> request) {
+        return Result.error("AI战略助手服务暂时不可用");
+        /*
         String prompt = request.get("prompt");
         if (prompt == null || prompt.isEmpty()) {
             return Result.BadRequest("Prompt cannot be empty");
@@ -75,5 +77,6 @@ public class AIController {
         } catch (Exception e) {
             return Result.error("AI service failure: " + e.getMessage());
         }
+        */
     }
 }

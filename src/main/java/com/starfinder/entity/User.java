@@ -9,9 +9,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
-
     @Column(name = "battle_tag")
     private String battleTag;
 
@@ -34,6 +31,18 @@ public class User {
     private String race;
 
     private Integer mmr;
+
+    @Column(name = "mmr_terran")
+    private Integer mmrTerran;
+
+    @Column(name = "mmr_zerg")
+    private Integer mmrZerg;
+
+    @Column(name = "mmr_protoss")
+    private Integer mmrProtoss;
+
+    @Column(name = "mmr_random")
+    private Integer mmrRandom;
 
     @Column(name = "mmr_2v2")
     private Integer mmr2v2;
@@ -71,14 +80,6 @@ public class User {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getBattleTag() {
@@ -143,6 +144,38 @@ public class User {
 
     public void setMmr(Integer mmr) {
         this.mmr = mmr;
+    }
+
+    public Integer getMmrTerran() {
+        return mmrTerran;
+    }
+
+    public void setMmrTerran(Integer mmrTerran) {
+        this.mmrTerran = mmrTerran;
+    }
+
+    public Integer getMmrZerg() {
+        return mmrZerg;
+    }
+
+    public void setMmrZerg(Integer mmrZerg) {
+        this.mmrZerg = mmrZerg;
+    }
+
+    public Integer getMmrProtoss() {
+        return mmrProtoss;
+    }
+
+    public void setMmrProtoss(Integer mmrProtoss) {
+        this.mmrProtoss = mmrProtoss;
+    }
+
+    public Integer getMmrRandom() {
+        return mmrRandom;
+    }
+
+    public void setMmrRandom(Integer mmrRandom) {
+        this.mmrRandom = mmrRandom;
     }
 
     public Integer getMmr2v2() {
