@@ -33,12 +33,27 @@ public class SC2PulseService {
     }
 
     /**
-     * Search for characters by name
+     * Search for characters by name - returns only IDs (legacy)
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> searchCharacters(String name) {
         try {
             String url = baseUrl + "/characters?field=id&name=" + name;
+            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            return response.getBody() != null ? response.getBody() : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Rich character search using /api/characters?query= 
+     * Returns full data: ratingMax, leagueMax, totalGamesPlayed, members (battleTag, region, raceGames)
+     */
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> searchCharactersRich(String query) {
+        try {
+            String url = baseUrl + "/characters?query=" + java.net.URLEncoder.encode(query, "UTF-8") + "&limit=10";
             ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (Exception e) {
@@ -140,47 +155,86 @@ public class SC2PulseService {
             }
         }
 
-        // Update 1v1 MMR (Highest among all races)
-        List<Map<String, Object>> teams1v1 = getCharacterTeams(charId, "LOTV_1V1");
+        // Update 1v1 MMR per race
+        List<Map<String, Object>> teams1v1 = getCharacterTeams(charId, null);
         int max1v1 = 0;
         String bestRace = user.getRace();
+        java.util.Map<String, Integer> perRaceBest = new java.util.HashMap<>();
+
         for (Map<String, Object> team : teams1v1) {
+            // queueType is inside league.queueType
+            Object leagueObj = team.get("league");
+            int qt = -1;
+            if (leagueObj instanceof Map) {
+                Object qtObj = ((Map<?,?>)leagueObj).get("queueType");
+                qt = (qtObj instanceof Number) ? ((Number)qtObj).intValue() : -1;
+            }
+            if (qt != 201) continue; // Only 1v1
+
             Object ratingObj = team.get("rating");
-            if (ratingObj instanceof Number) {
-                int r = ((Number) ratingObj).intValue();
-                if (r > max1v1) {
-                    max1v1 = r;
-                    // Try to get race
-                    List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
-                    if (members != null && !members.isEmpty()) {
-                        Object race = members.get(0).get("favoriteRace");
-                        if (race == null)
-                            race = members.get(0).get("race");
-                        if (race != null)
-                            bestRace = String.valueOf(race).substring(0, 1).toUpperCase();
-                    }
-                }
+            if (!(ratingObj instanceof Number)) continue;
+            int r = ((Number) ratingObj).intValue();
+
+            List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
+            if (members == null || members.isEmpty()) continue;
+
+            // Get race from raceGames map
+            String raceStr = getDominantRace(members.get(0));
+            if (raceStr != null) {
+                // Map full name to single char (ZERG→Z, TERRAN→T, PROTOSS→P, RANDOM→R)
+                String raceCode = raceStr.substring(0, 1).toUpperCase();
+                perRaceBest.merge(raceCode, r, Math::max);
+            }
+
+            if (r > max1v1) {
+                max1v1 = r;
+                if (raceStr != null) bestRace = raceStr.substring(0, 1).toUpperCase();
             }
         }
+
         if (max1v1 > 0) {
             user.setMmr(max1v1);
-            user.setRace(bestRace);
+            if (bestRace != null) user.setRace(bestRace);
         }
+        if (perRaceBest.containsKey("T")) user.setMmrTerran(perRaceBest.get("T"));
+        if (perRaceBest.containsKey("Z")) user.setMmrZerg(perRaceBest.get("Z"));
+        if (perRaceBest.containsKey("P")) user.setMmrProtoss(perRaceBest.get("P"));
+        if (perRaceBest.containsKey("R")) user.setMmrRandom(perRaceBest.get("R"));
 
         // Update 2v2, 3v3, 4v4
         Integer mmr2v2 = getMMR(charId, "LOTV_2V2");
-        if (mmr2v2 != null)
-            user.setMmr2v2(mmr2v2);
-
+        if (mmr2v2 != null) user.setMmr2v2(mmr2v2);
         Integer mmr3v3 = getMMR(charId, "LOTV_3V3");
-        if (mmr3v3 != null)
-            user.setMmr3v3(mmr3v3);
-
+        if (mmr3v3 != null) user.setMmr3v3(mmr3v3);
         Integer mmr4v4 = getMMR(charId, "LOTV_4V4");
-        if (mmr4v4 != null)
-            user.setMmr4v4(mmr4v4);
+        if (mmr4v4 != null) user.setMmr4v4(mmr4v4);
 
         userMapper.update(user);
+    }
+
+    /** Derive dominant race from a member map (from raceGames or xxxGamesPlayed fields). */
+    @SuppressWarnings("unchecked")
+    private String getDominantRace(Map<String, Object> member) {
+        Object raceGamesObj = member.get("raceGames");
+        if (raceGamesObj instanceof Map) {
+            Map<String, Object> raceGames = (Map<String, Object>) raceGamesObj;
+            if (!raceGames.isEmpty()) {
+                return raceGames.entrySet().stream()
+                    .max(java.util.Comparator.comparingInt(e -> e.getValue() instanceof Number ? ((Number)e.getValue()).intValue() : 0))
+                    .map(e -> e.getKey().toUpperCase())
+                    .filter(r -> !r.isEmpty() && !r.equals("NULL") && !r.equals("UNKNOWN"))
+                    .orElse(null);
+            }
+        }
+        String[] fields = {"zergGamesPlayed", "terranGamesPlayed", "protossGamesPlayed", "randomGamesPlayed"};
+        String[] races = {"ZERG", "TERRAN", "PROTOSS", "RANDOM"};
+        String best = null; int bestCount = 0;
+        for (int i = 0; i < fields.length; i++) {
+            Object v = member.get(fields[i]);
+            int c = (v instanceof Number) ? ((Number)v).intValue() : 0;
+            if (c > bestCount) { bestCount = c; best = races[i]; }
+        }
+        return best;
     }
 
     /**
@@ -192,19 +246,40 @@ public class SC2PulseService {
 
     /**
      * Find characterId by battleTag
+     * Uses the rich /api/characters?query= endpoint first to avoid extra round trips.
      */
     @SuppressWarnings("unchecked")
     public Long findCharacterId(String battleTag) {
         String playerName = battleTag.split("#")[0];
-        List<Map<String, Object>> characters = searchCharacters(playerName);
 
+        // First: try the rich query endpoint which returns battleTag directly
+        List<Map<String, Object>> richResults = searchCharactersRich(playerName);
+        for (Map<String, Object> charInfo : richResults) {
+            Object membersObj = charInfo.get("members");
+            if (membersObj instanceof Map) {
+                Map<?,?> member = (Map<?,?>) membersObj;
+                Object accountObj = member.get("account");
+                if (accountObj instanceof Map) {
+                    Object bt = ((Map<?,?>)accountObj).get("battleTag");
+                    if (battleTag.equals(bt)) {
+                        // Match found - extract character ID
+                        Object character = member.get("character");
+                        if (character instanceof Map) {
+                            Object idObj = ((Map<?,?>)character).get("id");
+                            if (idObj instanceof Number) return ((Number)idObj).longValue();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback: use id-only search then verify via character-teams
+        List<Map<String, Object>> characters = searchCharacters(playerName);
         for (Map<String, Object> charInfo : characters) {
             Object idObj = charInfo.get("id");
-            if (idObj == null)
-                continue;
+            if (idObj == null) continue;
             Long charId = ((Number) idObj).longValue();
 
-            // Verify by checking teams for matching battleTag
             List<Map<String, Object>> teams = getCharacterTeams(charId, null);
             for (Map<String, Object> team : teams) {
                 Object membersObj = team.get("members");

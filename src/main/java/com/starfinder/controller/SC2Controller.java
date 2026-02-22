@@ -23,24 +23,25 @@ public class SC2Controller {
     public Result<List<Map<String, Object>>> getFullMMR(@RequestParam String battleTag) {
         try {
             List<Map<String, Object>> searchResults = new ArrayList<>();
-            
+
             if (battleTag.contains("#")) {
+                // Exact battleTag lookup: find by name then verify
                 Long characterId = sc2PulseService.findCharacterId(battleTag);
                 if (characterId != null) {
                     searchResults.add(buildCharacterData(characterId, battleTag));
                 }
             } else {
-                // Search by name only, return multiple results
-                List<Map<String, Object>> characters = sc2PulseService.searchCharacters(battleTag);
-                for (Map<String, Object> charInfo : characters) {
-                    Object idObj = charInfo.get("id");
-                    if (idObj != null) {
-                        Long charId = ((Number) idObj).longValue();
-                        // For name search, we might not have the full battleTag yet, 
-                        // buildCharacterData will try to find it
-                        searchResults.add(buildCharacterData(charId, null));
-                    }
+                // Name-only search: use rich /api/characters?query= endpoint
+                List<Map<String, Object>> richResults = sc2PulseService.searchCharactersRich(battleTag);
+                for (Map<String, Object> charInfo : richResults) {
+                    try {
+                        // Extract data directly from the rich search response
+                        Map<String, Object> result = buildFromRichSearchResult(charInfo);
+                        searchResults.add(result);
+                    } catch (Exception ignored) {}
                 }
+                // Limit to top 10
+                if (searchResults.size() > 10) searchResults = searchResults.subList(0, 10);
             }
 
             if (searchResults.isEmpty()) {
@@ -53,12 +54,123 @@ public class SC2Controller {
         }
     }
 
+    /**
+     * Build result map from the /api/characters?query= rich response. 
+     * Used for name-only searches to avoid extra API round-trips.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> buildFromRichSearchResult(Map<String, Object> charInfo) {
+        Map<String, Object> data = new HashMap<>();
+
+        Object membersObj = charInfo.get("members");
+        Map<String, Object> member = (membersObj instanceof Map) ? (Map<String, Object>) membersObj : new HashMap<>();
+
+        // BattleTag
+        Object account = member.get("account");
+        String battleTag = "Unknown";
+        if (account instanceof Map) {
+            Object bt = ((Map<?,?>)account).get("battleTag");
+            if (bt != null && !"null".equalsIgnoreCase(String.valueOf(bt))) battleTag = String.valueOf(bt);
+        }
+
+        // Character ID
+        Object character = member.get("character");
+        Long characterId = null;
+        String region = "Unknown";
+        if (character instanceof Map) {
+            Object idObj = ((Map<?,?>)character).get("id");
+            if (idObj instanceof Number) characterId = ((Number)idObj).longValue();
+            region = toRegion(((Map<?,?>)character).get("region"));
+        }
+
+        // Race
+        String race = extractDominantRace(member);
+
+        // Stats from rich search
+        Object ratingMaxObj = charInfo.get("ratingMax");
+        int ratingMax = (ratingMaxObj instanceof Number) ? ((Number)ratingMaxObj).intValue() : 0;
+        Object leagueMaxObj = charInfo.get("leagueMax");
+        String bestLeague = (leagueMaxObj instanceof Number)
+            ? LEAGUE_MAP.getOrDefault(((Number)leagueMaxObj).intValue(), String.valueOf(leagueMaxObj))
+            : "None";
+        Object totalGamesObj = charInfo.get("totalGamesPlayed");
+        int totalGames = (totalGamesObj instanceof Number) ? ((Number)totalGamesObj).intValue() : 0;
+
+        data.put("characterId", characterId);
+        data.put("battleTag", battleTag);
+        data.put("region", region);
+        data.put("totalGames", totalGames);
+        data.put("bestAllMmr", ratingMax);
+        data.put("bestLeague", bestLeague);
+        data.put("race", race);
+
+        // For per-mode MMR, make a secondary call only if we have a character ID
+        Map<String, Object> mmrGroups = new LinkedHashMap<>();
+        List<Map<String, Object>> v1v1Results = new ArrayList<>();
+        Integer last1v1Mmr = null;
+        if (characterId != null) {
+            List<Map<String, Object>> allTeams = sc2PulseService.getCharacterTeams(characterId, null);
+            Map<String, Integer> bestPerRace = new LinkedHashMap<>();
+            for (Map<String, Object> team : allTeams) {
+                Object leagueObj = team.get("league");
+                int qt = -1;
+                if (leagueObj instanceof Map) {
+                    Object qtObj = ((Map<?,?>)leagueObj).get("queueType");
+                    qt = (qtObj instanceof Number) ? ((Number)qtObj).intValue() : -1;
+                }
+                if (qt < 201 || qt > 204) continue;
+                Object ratingObj = team.get("rating");
+                int rating = (ratingObj instanceof Number) ? ((Number)ratingObj).intValue() : 0;
+                if (qt == 201) {
+                    List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
+                    if (members != null && !members.isEmpty()) {
+                        String raceStr = extractDominantRace(members.get(0));
+                        if (raceStr != null) {
+                            bestPerRace.merge(raceStr, rating, Math::max);
+                            if (last1v1Mmr == null || rating > last1v1Mmr) last1v1Mmr = rating;
+                        }
+                    }
+                } else if (qt == 202) {
+                    if (!mmrGroups.containsKey("2v2") || rating > (int)mmrGroups.get("2v2"))
+                        mmrGroups.put("2v2", rating);
+                } else if (qt == 203) {
+                    if (!mmrGroups.containsKey("3v3") || rating > (int)mmrGroups.get("3v3"))
+                        mmrGroups.put("3v3", rating);
+                } else if (qt == 204) {
+                    if (!mmrGroups.containsKey("4v4") || rating > (int)mmrGroups.get("4v4"))
+                        mmrGroups.put("4v4", rating);
+                }
+            }
+            bestPerRace.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .forEach(e -> {
+                    Map<String, Object> t = new HashMap<>();
+                    t.put("race", e.getKey());
+                    t.put("rating", e.getValue());
+                    v1v1Results.add(t);
+                });
+        }
+        data.put("last1v1Mmr", last1v1Mmr != null ? last1v1Mmr : ratingMax);
+        data.put("last1v1Games", 0);
+        data.put("mmrGroups", mmrGroups);
+        mmrGroups.put("1v1", v1v1Results);
+        return data;
+    }
+
     private static final Map<Integer, String> LEAGUE_MAP = Map.of(
         0, "青铜", 1, "白银", 2, "黄金", 3, "铂金", 4, "钻石", 5, "大师", 6, "宗师"
     );
-    private static final Map<Object, String> REGION_MAP = Map.of(
-        1, "美服 (NA)", 2, "欧服 (EU)", 3, "韩服 (KR)", "1", "美服 (NA)", "2", "欧服 (EU)", "3", "韩服 (KR)"
-    );
+    private static final Map<String, String> REGION_STR_MAP = new java.util.HashMap<>(Map.of(
+        "NA", "美服 (NA)", "US", "美服 (NA)",
+        "EU", "欧服 (EU)",
+        "KR", "韩服 (KR)",
+        "1", "美服 (NA)", "2", "欧服 (EU)", "3", "韩服 (KR)"
+    ));
+    // Derive region string from a raw value (String or Integer)
+    private String toRegion(Object raw) {
+        if (raw == null) return "Unknown";
+        return REGION_STR_MAP.getOrDefault(String.valueOf(raw).toUpperCase(), String.valueOf(raw));
+    }
 
     private Map<String, Object> buildCharacterData(Long characterId, String battleTag) {
         Map<String, Object> data = new HashMap<>();
@@ -80,33 +192,36 @@ public class SC2Controller {
         Map<String, Integer> bestPerRace = new LinkedHashMap<>();
 
         for (Map<String, Object> team : allTeams) {
-            Object queueType = team.get("queueType");
-            Object ratingObj = team.get("rating");
-            int rating = (ratingObj instanceof Number) ? ((Number) ratingObj).intValue() : 0;
-            
-            // Stats aggregation (only LOTV queues: 201-204)
-            int qt = (queueType instanceof Number) ? ((Number) queueType).intValue() : -1;
+            // queueType is inside league object, NOT at top level
+            Object leagueObj = team.get("league");
+            int qt = -1;
+            int leagueType = -1;
+            if (leagueObj instanceof Map) {
+                Object qtObj = ((Map<?,?>)leagueObj).get("queueType");
+                Object ltObj = ((Map<?,?>)leagueObj).get("type");
+                qt = (qtObj instanceof Number) ? ((Number)qtObj).intValue() : -1;
+                leagueType = (ltObj instanceof Number) ? ((Number)ltObj).intValue() : -1;
+            }
             if (qt < 201 || qt > 204) continue; // Skip non-LOTV / unknown queues
 
-            totalGames += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
+            Object ratingObj = team.get("rating");
+            int rating = (ratingObj instanceof Number) ? ((Number) ratingObj).intValue() : 0;
+
+            Object winsObj = team.get("wins");
+            Object lossesObj = team.get("losses");
+            int wins = (winsObj instanceof Number) ? ((Number)winsObj).intValue() : 0;
+            int losses = (lossesObj instanceof Number) ? ((Number)lossesObj).intValue() : 0;
+            totalGames += wins + losses;
+
             if (rating > bestAllMmr) {
                 bestAllMmr = rating;
-                Object league = team.get("league");
-                if (league instanceof Map) {
-                    Object leagueType = ((Map<?,?>)league).get("type");
-                    if (leagueType instanceof Number) {
-                        bestLeague = LEAGUE_MAP.getOrDefault(((Number)leagueType).intValue(), String.valueOf(leagueType));
-                    } else {
-                        bestLeague = String.valueOf(leagueType);
-                    }
-                }
+                bestLeague = LEAGUE_MAP.getOrDefault(leagueType, String.valueOf(leagueType));
             }
             if ("Unknown".equals(region)) {
-                Object rawRegion = team.get("region");
-                region = REGION_MAP.getOrDefault(rawRegion, String.valueOf(rawRegion));
+                region = toRegion(team.get("region"));
             }
 
-            // Extract BattleTag if not provided
+            // Extract BattleTag from first member if not provided
             if (finalBattleTag == null) {
                 Object membersObj = team.get("members");
                 if (membersObj instanceof List && !((List<?>)membersObj).isEmpty()) {
@@ -114,7 +229,10 @@ public class SC2Controller {
                     if (member instanceof Map) {
                         Object account = ((Map<?,?>)member).get("account");
                         if (account instanceof Map) {
-                            finalBattleTag = String.valueOf(((Map<?,?>)account).get("battleTag"));
+                            Object bt = ((Map<?,?>)account).get("battleTag");
+                            if (bt != null && !"null".equalsIgnoreCase(String.valueOf(bt))) {
+                                finalBattleTag = String.valueOf(bt);
+                            }
                         }
                     }
                 }
@@ -122,16 +240,13 @@ public class SC2Controller {
 
             // Grouping for 1v1 vs Teams
             if (qt == 201) {
-                last1v1Games += (Integer) team.getOrDefault("wins", 0) + (Integer) team.getOrDefault("losses", 0);
-                
+                last1v1Games += wins + losses;
+
                 List<Map<String, Object>> members = (List<Map<String, Object>>) team.get("members");
                 if (members != null && !members.isEmpty()) {
-                    Object raceRaw = members.get(0).get("favoriteRace");
-                    if (raceRaw == null) raceRaw = members.get(0).get("race");
-                    String raceStr = raceRaw != null ? String.valueOf(raceRaw).toUpperCase() : null;
-                    // Filter out null, empty, or UNKNOWN races
-                    if (raceStr != null && !raceStr.isEmpty() && !raceStr.equals("NULL") && !raceStr.equals("UNKNOWN")) {
-                        // Deduplicate by race: keep highest MMR
+                    // Race: derive from raceGames map (pick race with most games)
+                    String raceStr = extractDominantRace(members.get(0));
+                    if (raceStr != null) {
                         bestPerRace.merge(raceStr, rating, Math::max);
                         if (last1v1Mmr == null || rating > last1v1Mmr) {
                             last1v1Mmr = rating;
@@ -174,9 +289,43 @@ public class SC2Controller {
         return data;
     }
 
+    /**
+     * Derive the dominant (most-played) race from a team member map.
+     * Checks both the legacy xxxGamesPlayed fields and the raceGames map.
+     */
+    @SuppressWarnings("unchecked")
+    private String extractDominantRace(Map<String, Object> member) {
+        // Try raceGames map first (e.g. {"ZERG":155,"PROTOSS":5})
+        Object raceGamesObj = member.get("raceGames");
+        if (raceGamesObj instanceof Map) {
+            Map<String, Object> raceGames = (Map<String, Object>) raceGamesObj;
+            if (!raceGames.isEmpty()) {
+                return raceGames.entrySet().stream()
+                    .max(java.util.Comparator.comparingInt(e -> e.getValue() instanceof Number ? ((Number)e.getValue()).intValue() : 0))
+                    .map(e -> e.getKey().toUpperCase())
+                    .filter(r -> !r.isEmpty() && !r.equals("NULL") && !r.equals("UNKNOWN"))
+                    .orElse(null);
+            }
+        }
+        // Fallback: check individual xxxGamesPlayed fields
+        Map<String, String> fieldToRace = new LinkedHashMap<>();
+        fieldToRace.put("zergGamesPlayed", "ZERG");
+        fieldToRace.put("terranGamesPlayed", "TERRAN");
+        fieldToRace.put("protossGamesPlayed", "PROTOSS");
+        fieldToRace.put("randomGamesPlayed", "RANDOM");
+        String bestRace = null;
+        int bestCount = 0;
+        for (Map.Entry<String, String> e : fieldToRace.entrySet()) {
+            Object v = member.get(e.getKey());
+            int count = (v instanceof Number) ? ((Number)v).intValue() : 0;
+            if (count > bestCount) { bestCount = count; bestRace = e.getValue(); }
+        }
+        return bestRace;
+    }
+
     @GetMapping("/search")
     public List<Map<String, Object>> searchCharacters(@RequestParam String name) {
-        return sc2PulseService.searchCharacters(name);
+        return sc2PulseService.searchCharactersRich(name);
     }
 
     @GetMapping("/mmr/{characterId}")
