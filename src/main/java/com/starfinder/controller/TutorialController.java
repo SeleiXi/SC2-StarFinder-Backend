@@ -4,6 +4,7 @@ import com.starfinder.dto.TutorialDTO;
 import com.starfinder.dto.Result;
 import com.starfinder.entity.Tutorial;
 import com.starfinder.service.TutorialService;
+import com.starfinder.mapper.TutorialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,9 @@ public class TutorialController {
     @Autowired
     private TutorialService tutorialService;
 
+    @Autowired
+    private TutorialMapper tutorialMapper;
+
     @PostMapping
     public Result<Tutorial> createTutorial(@RequestBody TutorialDTO dto) {
         return tutorialService.createTutorial(dto);
@@ -27,6 +31,11 @@ public class TutorialController {
             return tutorialService.getTutorialsByCategory(category);
         }
         return tutorialService.getAllTutorials();
+    }
+
+    @GetMapping("/categories")
+    public Result<List<String>> getCategories() {
+        return Result.success(tutorialMapper.findDistinctCategories());
     }
 
     @DeleteMapping("/{id}")

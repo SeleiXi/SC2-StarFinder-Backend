@@ -30,19 +30,31 @@ public class StreamServiceImpl implements StreamService {
             return Result.BadRequest("直播链接不能为空");
         }
 
-        // Try to fetch MMR if BattleTag is provided
-        if (stream.getBattleTag() != null && !stream.getBattleTag().isEmpty()) {
+        // Try to fetch highest MMR across all BattleTags provided
+        String[] tagsToCheck = {
+            stream.getBattleTag(),
+            stream.getBattleTagCN(),
+            stream.getBattleTagUS(),
+            stream.getBattleTagEU(),
+            stream.getBattleTagKR()
+        };
+        int highestMmr = 0;
+        for (String tag : tagsToCheck) {
+            if (tag == null || tag.trim().isEmpty()) continue;
             try {
-                Long characterId = sc2PulseService.findCharacterId(stream.getBattleTag());
+                Long characterId = sc2PulseService.findCharacterId(tag.trim());
                 if (characterId != null) {
-                    Integer mmr = sc2PulseService.getMMR(characterId);
-                    if (mmr != null) {
-                        stream.setMmr(mmr);
+                    Integer mmr = sc2PulseService.getMMR(characterId, "LOTV_1V1");
+                    if (mmr != null && mmr > highestMmr) {
+                        highestMmr = mmr;
                     }
                 }
             } catch (Exception e) {
-                // Ignore failure to fetch MMR
+                // ignore
             }
+        }
+        if (highestMmr > 0) {
+            stream.setMmr(highestMmr);
         }
 
         streamMapper.insert(stream);

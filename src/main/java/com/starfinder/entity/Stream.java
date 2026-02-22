@@ -18,6 +18,18 @@ public class Stream {
     @Column(name = "battle_tag")
     private String battleTag;
 
+    @Column(name = "battle_tag_cn")
+    private String battleTagCN;
+
+    @Column(name = "battle_tag_us")
+    private String battleTagUS;
+
+    @Column(name = "battle_tag_eu")
+    private String battleTagEU;
+
+    @Column(name = "battle_tag_kr")
+    private String battleTagKR;
+
     @Column(name = "stream_url", nullable = false)
     private String streamUrl;
 

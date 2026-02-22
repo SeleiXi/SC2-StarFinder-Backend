@@ -56,6 +56,9 @@ public class User {
     @Column(name = "commander")
     private String commander;
 
+    @Column(name = "coop_level", length = 20)
+    private String coopLevel;
+
     @Column(name = "email")
     private String email;
 
@@ -208,6 +211,14 @@ public class User {
 
     public void setCommander(String commander) {
         this.commander = commander;
+    }
+
+    public String getCoopLevel() {
+        return coopLevel;
+    }
+
+    public void setCoopLevel(String coopLevel) {
+        this.coopLevel = coopLevel;
     }
 
     public String getEmail() {

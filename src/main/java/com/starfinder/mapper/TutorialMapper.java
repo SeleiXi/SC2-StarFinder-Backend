@@ -24,4 +24,7 @@ public interface TutorialMapper {
 
     @Delete("DELETE FROM tutorials WHERE id = #{id}")
     void deleteById(Long id);
+
+    @Select("SELECT DISTINCT category FROM tutorials WHERE category IS NOT NULL AND category != '' ORDER BY category")
+    List<String> findDistinctCategories();
 }

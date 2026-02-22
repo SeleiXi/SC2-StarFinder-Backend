@@ -174,6 +174,8 @@ public class UserServiceImpl implements UserService {
             user.setBattleTagEU(dto.getBattleTagEU());
         if (dto.getBattleTagKR() != null)
             user.setBattleTagKR(dto.getBattleTagKR());
+        if (dto.getCoopLevel() != null)
+            user.setCoopLevel(dto.getCoopLevel());
 
         // Always try to sync MMR from SC2 Pulse when BattleTag is updated
         syncUserMMR(user);
@@ -227,10 +229,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> findMatches(int mmr, int range, String opponentRace, String mode) {
         if ("coop".equalsIgnoreCase(mode)) {
-            // Task 6: Match by commander
+            // Only return users who have a commander set
             List<User> matches = (opponentRace != null && !opponentRace.isEmpty())
-                    ? userMapper.findByCommander(opponentRace)
-                    : userMapper.findAll();
+                    ? userMapper.findByCommanderWithFilter(opponentRace)
+                    : userMapper.findAllWithCommander();
             for (User u : matches) u.setPassword(null);
             return matches;
         }

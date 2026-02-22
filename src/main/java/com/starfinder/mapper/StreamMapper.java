@@ -6,8 +6,8 @@ import java.util.List;
 
 @Mapper
 public interface StreamMapper {
-    @Insert("INSERT INTO streams (name, battle_tag, stream_url, description, mmr, race, platform, user_id) " +
-            "VALUES (#{name}, #{battleTag}, #{streamUrl}, #{description}, #{mmr}, #{race}, #{platform}, #{userId})")
+    @Insert("INSERT INTO streams (name, battle_tag, battle_tag_cn, battle_tag_us, battle_tag_eu, battle_tag_kr, stream_url, description, mmr, race, platform, user_id) " +
+            "VALUES (#{name}, #{battleTag}, #{battleTagCN}, #{battleTagUS}, #{battleTagEU}, #{battleTagKR}, #{streamUrl}, #{description}, #{mmr}, #{race}, #{platform}, #{userId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Stream stream);
 

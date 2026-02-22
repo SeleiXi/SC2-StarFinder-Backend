@@ -2,6 +2,7 @@ package com.starfinder.dto;
 
 public class ProfileUpdateDTO {
     private String battleTag;
+    private String coopLevel;
     private String battleTagCN;
     private String battleTagUS;
     private String battleTagEU;
@@ -148,6 +149,14 @@ public class ProfileUpdateDTO {
 
     public void setCommander(String commander) {
         this.commander = commander;
+    }
+
+    public String getCoopLevel() {
+        return coopLevel;
+    }
+
+    public void setCoopLevel(String coopLevel) {
+        this.coopLevel = coopLevel;
     }
 
     public String getQq() {
