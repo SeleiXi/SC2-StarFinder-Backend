@@ -5,7 +5,6 @@ import com.starfinder.entity.ClanRecruitment;
 import com.starfinder.entity.User;
 import com.starfinder.mapper.ClanRecruitmentMapper;
 import com.starfinder.mapper.UserMapper;
-import com.starfinder.service.SC2PulseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +23,6 @@ public class ClanController {
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private SC2PulseService sc2PulseService;
-
     @Value("${sc2pulse.base-url}")
     private String sc2PulseBaseUrl;
 
@@ -38,7 +34,7 @@ public class ClanController {
     );
 
     // Cache for clan ranking (1 hour)
-    private List<Map<String, Object>> cachedRanking = null;
+    private final Map<String, List<Map<String, Object>>> cachedRanking = new HashMap<>();
     private long lastRankingFetch = 0;
     private static final long CACHE_TTL = 3600000L;
 
@@ -46,14 +42,15 @@ public class ClanController {
     @GetMapping("/ranking")
     public Result<List<Map<String, Object>>> getClanRanking(
             @RequestParam(defaultValue = "") String query,
-            @RequestParam(defaultValue = "US") String region) {
+            @RequestParam(defaultValue = "US") String region,
+            @RequestParam(defaultValue = "avgRating") String sortBy) {
         try {
-            String cacheKey = query + "_" + region;
+            String cacheKey = query + "_" + region + "_" + sortBy;
             long now = System.currentTimeMillis();
 
             // Use cache for empty query
-            if (query.isEmpty() && cachedRanking != null && (now - lastRankingFetch) < CACHE_TTL) {
-                return Result.success(cachedRanking);
+            if (query.isEmpty() && (now - lastRankingFetch) < CACHE_TTL && cachedRanking.containsKey(cacheKey)) {
+                return Result.success(cachedRanking.get(cacheKey));
             }
 
             String url = sc2PulseBaseUrl + "/clans";
@@ -84,16 +81,26 @@ public class ClanController {
                 result.add(r);
             }
 
-            // Sort by avgRating descending (for non-query requests)
-            if (query.isEmpty()) {
-                result.sort((a, b) -> {
-                    Number ra = (Number) a.get("avgRating");
-                    Number rb = (Number) b.get("avgRating");
-                    int va = ra != null ? ra.intValue() : 0;
-                    int vb = rb != null ? rb.intValue() : 0;
+            // Sort by requested field
+            if (sortBy == null || sortBy.isBlank()) sortBy = "avgRating";
+            final String sortKey = sortBy;
+            result.sort((a, b) -> {
+                if ("activeMembers".equalsIgnoreCase(sortKey)) {
+                    Number aa = (Number) (a.get("activeMembers") != null ? a.get("activeMembers") : a.get("members"));
+                    Number bb = (Number) (b.get("activeMembers") != null ? b.get("activeMembers") : b.get("members"));
+                    int va = aa != null ? aa.intValue() : 0;
+                    int vb = bb != null ? bb.intValue() : 0;
                     return Integer.compare(vb, va);
-                });
-                cachedRanking = result;
+                }
+                Number ra = (Number) a.get("avgRating");
+                Number rb = (Number) b.get("avgRating");
+                int va = ra != null ? ra.intValue() : 0;
+                int vb = rb != null ? rb.intValue() : 0;
+                return Integer.compare(vb, va);
+            });
+
+            if (query.isEmpty()) {
+                cachedRanking.put(cacheKey, result);
                 lastRankingFetch = now;
             }
 
