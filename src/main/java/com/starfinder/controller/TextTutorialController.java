@@ -5,6 +5,8 @@ import com.starfinder.entity.TextTutorial;
 import com.starfinder.entity.User;
 import com.starfinder.mapper.TextTutorialMapper;
 import com.starfinder.mapper.UserMapper;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,8 +41,8 @@ public class TextTutorialController {
 
     @PostMapping
     public Result<TextTutorial> create(@RequestBody Map<String, Object> body) {
-        Object userIdObj = body.get("userId");
-        if (userIdObj == null) return Result.BadRequest("需要登录");
+        Long userId = AuthContext.getUserId();
+        if (userId == null) return Result.BadRequest("需要登录");
 
         String title = (String) body.get("title");
         String content = (String) body.get("content");
@@ -49,7 +51,6 @@ public class TextTutorialController {
         if (content == null || content.trim().isEmpty()) return Result.BadRequest("内容不能为空");
         if (content.length() > 50000) return Result.BadRequest("内容不能超过50000字");
 
-        Long userId = ((Number) userIdObj).longValue();
         User user = userMapper.findById(userId);
         if (user == null) return Result.BadRequest("用户不存在");
 
@@ -69,10 +70,11 @@ public class TextTutorialController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<String> delete(@PathVariable Long id, @RequestParam Long userId) {
-        User user = userMapper.findById(userId);
-        if (user == null) return Result.BadRequest("用户不存在");
-        if (!"admin".equals(user.getRole())) return Result.BadRequest("无权限");
+    public Result<String> delete(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+        if (userId != null && !userId.equals(principal.userId())) return Result.BadRequest("无权限");
+        if (!principal.isAdmin()) return Result.BadRequest("无权限");
         textTutorialMapper.deleteById(id);
         return Result.success("已删除");
     }

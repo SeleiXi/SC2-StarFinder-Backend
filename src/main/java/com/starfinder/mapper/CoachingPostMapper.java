@@ -18,6 +18,9 @@ public interface CoachingPostMapper {
     @Select("SELECT * FROM coaching_posts WHERE post_type = #{postType} ORDER BY created_at DESC")
     List<CoachingPost> findByType(@Param("postType") String postType);
 
+    @Select("SELECT * FROM coaching_posts WHERE id = #{id}")
+    CoachingPost findById(@Param("id") Long id);
+
     @Delete("DELETE FROM coaching_posts WHERE id = #{id}")
     void deleteById(Long id);
 }

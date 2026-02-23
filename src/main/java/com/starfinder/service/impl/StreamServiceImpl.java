@@ -5,6 +5,8 @@ import com.starfinder.entity.Stream;
 import com.starfinder.entity.User;
 import com.starfinder.mapper.StreamMapper;
 import com.starfinder.mapper.UserMapper;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.StreamService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +70,14 @@ public class StreamServiceImpl implements StreamService {
 
     @Override
     public Result<Void> deleteStream(Long id, Long adminId) {
-        User admin = userMapper.findById(adminId);
-        if (admin == null || !("admin".equals(admin.getRole()) || "super_admin".equals(admin.getRole()))) {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) {
+            return Result.BadRequest("需要登录");
+        }
+        if (adminId != null && !adminId.equals(principal.userId())) {
+            return Result.BadRequest("无权限删除直播");
+        }
+        if (!principal.isAdmin()) {
             return Result.BadRequest("无权限删除直播");
         }
         streamMapper.deleteById(id);

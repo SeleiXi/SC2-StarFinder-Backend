@@ -23,5 +23,16 @@ server:
   address: 0.0.0.0
   port: 8089
 
+app:
+  cors:
+    # Comma-separated; set this in production to your real frontend domain(s)
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080}
+  security:
+    jwt:
+      # IMPORTANT: set APP_JWT_SECRET in production
+      secret: ${APP_JWT_SECRET:CHANGE_ME}
+      issuer: starfinder
+      ttl-seconds: 604800
+
 sc2pulse:
   base-url: https://sc2pulse.nephest.com/sc2/api

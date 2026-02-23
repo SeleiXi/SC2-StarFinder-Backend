@@ -1,9 +1,11 @@
 package com.starfinder.controller;
 
 import com.starfinder.dto.ProfileUpdateDTO;
+import com.starfinder.dto.AuthResponseDTO;
 import com.starfinder.dto.RegisterDTO;
 import com.starfinder.dto.Result;
 import com.starfinder.entity.User;
+import com.starfinder.security.JwtService;
 import com.starfinder.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,19 +19,40 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JwtService jwtService;
+
     @PostMapping("/register")
-    public Result<User> createUser(@RequestBody RegisterDTO registerDTO) {
-        return userService.createUser(registerDTO);
+    public Result<AuthResponseDTO> createUser(@RequestBody RegisterDTO registerDTO) {
+        Result<User> result = userService.createUser(registerDTO);
+        if (result == null || result.getCode() == null || result.getCode() != 200) {
+            return Result.BadRequest(result != null ? result.getMsg() : "注册失败");
+        }
+        User user = result.getData();
+        String token = jwtService.createToken(user.getId(), user.getRole());
+        return Result.success(new AuthResponseDTO(user, token));
     }
 
     @PostMapping("/login")
-    public Result<User> login(@RequestBody RegisterDTO loginDTO) {
-        return userService.verifyUser(loginDTO);
+    public Result<AuthResponseDTO> login(@RequestBody RegisterDTO loginDTO) {
+        Result<User> result = userService.verifyUser(loginDTO);
+        if (result == null || result.getCode() == null || result.getCode() != 200) {
+            return Result.BadRequest(result != null ? result.getMsg() : "登录失败");
+        }
+        User user = result.getData();
+        String token = jwtService.createToken(user.getId(), user.getRole());
+        return Result.success(new AuthResponseDTO(user, token));
     }
 
     @PostMapping("/login/code")
-    public Result<User> loginByCode(@RequestParam String email, @RequestParam String code) {
-        return userService.verifyUserByCode(email, code);
+    public Result<AuthResponseDTO> loginByCode(@RequestParam String email, @RequestParam String code) {
+        Result<User> result = userService.verifyUserByCode(email, code);
+        if (result == null || result.getCode() == null || result.getCode() != 200) {
+            return Result.BadRequest(result != null ? result.getMsg() : "登录失败");
+        }
+        User user = result.getData();
+        String token = jwtService.createToken(user.getId(), user.getRole());
+        return Result.success(new AuthResponseDTO(user, token));
     }
 
     @PostMapping("/password/reset")

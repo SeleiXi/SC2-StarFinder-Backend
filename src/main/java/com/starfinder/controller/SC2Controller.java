@@ -2,6 +2,8 @@ package com.starfinder.controller;
 
 import com.starfinder.dto.Result;
 import com.starfinder.service.SC2PulseService;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import com.starfinder.mapper.UserMapper;
 import com.starfinder.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -442,6 +444,9 @@ public class SC2Controller {
 
     @PostMapping("/update-all-mmr")
     public Result<String> updateAllMMR() {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+        if (!principal.isAdmin()) return Result.BadRequest("无权限");
         try {
             sc2PulseService.updateAllUsersMMR();
             return Result.success("已启动全量MMR更新");

@@ -3,6 +3,8 @@ package com.starfinder.controller;
 import com.starfinder.dto.TutorialDTO;
 import com.starfinder.dto.Result;
 import com.starfinder.entity.Tutorial;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.TutorialService;
 import com.starfinder.mapper.TutorialMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ public class TutorialController {
 
     @PostMapping
     public Result<Tutorial> createTutorial(@RequestBody TutorialDTO dto) {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+        if (!principal.isAdmin()) return Result.BadRequest("无权限");
         return tutorialService.createTutorial(dto);
     }
 
@@ -40,6 +45,9 @@ public class TutorialController {
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteTutorial(@PathVariable Long id) {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+        if (!principal.isAdmin()) return Result.BadRequest("无权限");
         return tutorialService.deleteTutorial(id);
     }
 }

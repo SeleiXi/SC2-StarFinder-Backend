@@ -5,6 +5,8 @@ import com.starfinder.entity.CoachingPost;
 import com.starfinder.entity.User;
 import com.starfinder.mapper.CoachingPostMapper;
 import com.starfinder.mapper.UserMapper;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,8 +36,8 @@ public class CoachingController {
 
     @PostMapping
     public Result<CoachingPost> create(@RequestBody Map<String, Object> body) {
-        Object userIdObj = body.get("userId");
-        if (userIdObj == null) return Result.BadRequest("需要登录");
+        Long userId = AuthContext.getUserId();
+        if (userId == null) return Result.BadRequest("需要登录");
 
         String title = (String) body.get("title");
         String description = (String) body.get("description");
@@ -44,7 +46,6 @@ public class CoachingController {
         if (description == null || description.trim().isEmpty()) return Result.BadRequest("描述不能为空");
         if (description.length() > 3000) return Result.BadRequest("描述不能超过3000字");
 
-        Long userId = ((Number) userIdObj).longValue();
         User user = userMapper.findById(userId);
         if (user == null) return Result.BadRequest("用户不存在");
 
@@ -74,9 +75,21 @@ public class CoachingController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<String> delete(@PathVariable Long id, @RequestParam Long userId) {
-        User user = userMapper.findById(userId);
-        if (user == null) return Result.BadRequest("用户不存在");
+    public Result<String> delete(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+
+        // Optional compatibility: if client still sends userId, it must match the token.
+        if (userId != null && !userId.equals(principal.userId())) {
+            return Result.BadRequest("无权限");
+        }
+
+        CoachingPost post = coachingPostMapper.findById(id);
+        if (post == null) return Result.BadRequest("记录不存在");
+
+        boolean canDelete = principal.isAdmin() || principal.userId().equals(post.getUserId());
+        if (!canDelete) return Result.BadRequest("无权限");
+
         coachingPostMapper.deleteById(id);
         return Result.success("已删除");
     }

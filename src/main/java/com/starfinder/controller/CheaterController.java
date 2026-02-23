@@ -3,6 +3,8 @@ package com.starfinder.controller;
 import com.starfinder.dto.CheaterDTO;
 import com.starfinder.dto.Result;
 import com.starfinder.entity.Cheater;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.CheaterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +21,12 @@ public class CheaterController {
     @PostMapping("/report")
     public Result<Cheater> reportCheater(@RequestBody CheaterDTO dto,
             @RequestParam(required = false) Long userId) {
-        return cheaterService.reportCheater(dto, userId);
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return Result.BadRequest("需要登录");
+        if (userId != null && !userId.equals(principal.userId())) {
+            return Result.BadRequest("无权限");
+        }
+        return cheaterService.reportCheater(dto, principal.userId());
     }
 
     @GetMapping("/list")

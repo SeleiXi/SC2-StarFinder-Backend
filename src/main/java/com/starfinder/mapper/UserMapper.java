@@ -82,6 +82,9 @@ public interface UserMapper {
     @Update("UPDATE users SET password=#{password} WHERE email=#{email}")
     void updatePassword(@Param("email") String email, @Param("password") String password);
 
+        @Update("UPDATE users SET password=#{password} WHERE id=#{id}")
+        void updatePasswordById(@Param("id") Long id, @Param("password") String password);
+
     @Select("SELECT * FROM users")
     List<User> findAll();
 

@@ -3,6 +3,8 @@ package com.starfinder.controller;
 import com.starfinder.dto.*;
 import com.starfinder.entity.*;
 import com.starfinder.mapper.*;
+import com.starfinder.security.AuthContext;
+import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -32,17 +34,17 @@ public class AdminController {
 
     // ============ Auth Check ============
     private boolean isAdmin(Long userId) {
-        if (userId == null)
-            return false;
-        User user = userMapper.findById(userId);
-        return user != null && ("admin".equals(user.getRole()) || "super_admin".equals(user.getRole()));
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return false;
+        if (userId != null && !userId.equals(principal.userId())) return false;
+        return principal.isAdmin();
     }
 
     private boolean isSuperAdmin(Long userId) {
-        if (userId == null)
-            return false;
-        User user = userMapper.findById(userId);
-        return user != null && "super_admin".equals(user.getRole());
+        AuthPrincipal principal = AuthContext.get();
+        if (principal == null) return false;
+        if (userId != null && !userId.equals(principal.userId())) return false;
+        return principal.isSuperAdmin();
     }
 
     // ============ Users CRUD ============
@@ -51,9 +53,9 @@ public class AdminController {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
         List<User> users = userMapper.findAll();
-        // Don't clear password here if the admin is supposed to manage them? 
-        // No, we should return them if requested or have a separate way.
-        // The user said "包括密码". So I'll return passwords for admins.
+        for (User u : users) {
+            if (u != null) u.setPassword(null);
+        }
         return Result.success(users);
     }
 

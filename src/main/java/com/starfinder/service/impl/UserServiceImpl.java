@@ -11,6 +11,7 @@ import com.starfinder.mapper.UserMapper;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.UserService;
 import com.starfinder.service.EmailService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -25,6 +26,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Result<User> createUser(RegisterDTO registerDTO) {
@@ -53,8 +57,8 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = new User();
-        user.setEmail(registerDTO.getEmail());
-        user.setPassword(registerDTO.getPassword());
+        user.setEmail(registerDTO.getEmail().trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         
         user.setBattleTag(registerDTO.getBattleTag());
         user.setQq(registerDTO.getQq());
@@ -88,6 +92,10 @@ public class UserServiceImpl implements UserService {
     public Result<User> verifyUser(RegisterDTO loginDTO) {
         String identifier = loginDTO.getEmail(); // Use email as identifier
         String password = loginDTO.getPassword();
+
+        if (identifier != null && identifier.contains("@")) {
+            identifier = identifier.trim().toLowerCase();
+        }
         
         // Try to find by email
         User user = userMapper.findByEmail(identifier);
@@ -100,19 +108,39 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return Result.BadRequest("用户不存在");
         }
-        if (password != null && password.equals(user.getPassword())) {
-            user.setPassword(null); // Don't return password
-            return Result.success(user);
+        if (password != null && user.getPassword() != null) {
+            String stored = user.getPassword();
+            boolean ok;
+
+            // Legacy compatibility: old records may store plaintext password.
+            if (looksLikeBcrypt(stored)) {
+                ok = passwordEncoder.matches(password, stored);
+            } else {
+                ok = password.equals(stored);
+                if (ok) {
+                    // Migrate plaintext to BCrypt on successful login.
+                    userMapper.updatePassword(user.getEmail(), passwordEncoder.encode(password));
+                }
+            }
+
+            if (ok) {
+                user.setPassword(null); // Don't return password
+                return Result.success(user);
+            }
         }
         return Result.BadRequest("密码错误");
     }
 
     @Override
     public Result<User> verifyUserByCode(String email, String code) {
-        if (!emailService.verifyCode(email, code)) {
+        if (email == null || email.isBlank() || code == null || code.isBlank()) {
+            return Result.BadRequest("参数错误");
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        if (!emailService.verifyCode(normalizedEmail, code)) {
             return Result.BadRequest("验证码错误或已过期");
         }
-        User user = userMapper.findByEmail(email);
+        User user = userMapper.findByEmail(normalizedEmail);
         if (user == null) {
             return Result.BadRequest("用户不存在");
         }
@@ -122,14 +150,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result<String> resetPassword(String email, String code, String newPassword) {
-        if (!emailService.verifyCode(email, code)) {
+        if (email == null || email.isBlank() || code == null || code.isBlank() || newPassword == null) {
+            return Result.BadRequest("参数错误");
+        }
+        if (newPassword.length() < 8) {
+            return Result.BadRequest("密码太弱：需至少8位");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+        if (!emailService.verifyCode(normalizedEmail, code)) {
             return Result.BadRequest("验证码错误或已过期");
         }
-        User user = userMapper.findByEmail(email);
+        User user = userMapper.findByEmail(normalizedEmail);
         if (user == null) {
             return Result.BadRequest("该邮箱未注册");
         }
-        userMapper.updatePassword(email, newPassword);
+        userMapper.updatePassword(normalizedEmail, passwordEncoder.encode(newPassword));
         return Result.success("密码已重置");
     }
 
@@ -163,8 +199,13 @@ public class UserServiceImpl implements UserService {
             user.setSignature(dto.getSignature());
         if (dto.getRegion() != null)
             user.setRegion(dto.getRegion());
-        if (dto.getPassword() != null && !dto.getPassword().isEmpty())
-            user.setPassword(dto.getPassword());
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            if (dto.getPassword().length() < 8) {
+                return Result.BadRequest("密码太弱：需至少8位");
+            }
+            // Password is updated via a dedicated mapper method.
+            userMapper.updatePasswordById(userId, passwordEncoder.encode(dto.getPassword()));
+        }
 
         if (dto.getBattleTagCN() != null)
             user.setBattleTagCN(dto.getBattleTagCN());
@@ -193,6 +234,10 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
         user.setPassword(null);
         return Result.success(user);
+    }
+
+    private static boolean looksLikeBcrypt(String stored) {
+        return stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$");
     }
 
     private void syncUserMMR(User user) {
