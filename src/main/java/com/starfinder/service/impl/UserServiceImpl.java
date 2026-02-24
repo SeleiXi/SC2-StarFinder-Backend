@@ -46,14 +46,15 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("验证码无效或已过期");
         }
 
-        // Check if email already exists
-        User existingEmail = userMapper.findByEmail(registerDTO.getEmail());
+        // Normalize email and check if it already exists
+        String normalizedEmail = registerDTO.getEmail().trim().toLowerCase();
+        User existingEmail = userMapper.findByEmail(normalizedEmail);
         if (existingEmail != null) {
             return Result.BadRequest("该邮箱已注册");
         }
 
         User user = new User();
-        user.setEmail(registerDTO.getEmail().trim().toLowerCase());
+        user.setEmail(normalizedEmail);
         user.setPassword(registerDTO.getPassword());
         
         user.setBattleTag(registerDTO.getBattleTag());
@@ -79,7 +80,12 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (Exception e) {
+            // Likely a duplicate key in concurrent registration; return friendly message
+            return Result.BadRequest("该邮箱已注册");
+        }
         user.setPassword(null); // Don't return password
         return Result.success(user);
     }
@@ -253,12 +259,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> findMatches(int mmr, int range, String opponentRace, String mode) {
+    public List<User> findMatches(int mmr, int range, String opponentRace, String mode, Integer minLevel) {
         if ("coop".equalsIgnoreCase(mode)) {
             // Only return users who have a commander set
             List<User> matches = (opponentRace != null && !opponentRace.isEmpty())
                     ? userMapper.findByCommanderWithFilter(opponentRace)
                     : userMapper.findAllWithCommander();
+            // Filter by coop level if provided (coopLevel stored as String)
+            if (minLevel != null) {
+                List<User> filtered = new java.util.ArrayList<>();
+                for (User u : matches) {
+                    try {
+                        String cl = u.getCoopLevel();
+                        int lv = 0;
+                        if (cl != null && !cl.isBlank()) {
+                            lv = Integer.parseInt(cl.replaceAll("[^0-9]", ""));
+                        }
+                        if (lv >= minLevel) filtered.add(u);
+                    } catch (Exception ignored) {
+                        // skip unparsable values
+                    }
+                }
+                matches = filtered;
+            }
             for (User u : matches) u.setPassword(null);
             return matches;
         }

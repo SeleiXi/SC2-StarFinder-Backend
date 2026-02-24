@@ -2,6 +2,9 @@ package com.starfinder.controller;
 
 import com.starfinder.dto.Result;
 import com.starfinder.service.SC2PulseService;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import com.starfinder.security.AuthContext;
 import com.starfinder.security.AuthPrincipal;
 import com.starfinder.mapper.UserMapper;
@@ -20,6 +23,11 @@ public class SC2Controller {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/full-mmr")
     public Result<List<Map<String, Object>>> getFullMMR(@RequestParam String battleTag) {
@@ -340,28 +348,29 @@ public class SC2Controller {
         return Map.of("error", "No data found");
     }
 
-    private List<Map<String, Object>> cachedStreams = null;
-    private long lastStreamsFetchTime = 0;
-    private static final long STREAMS_CACHE_DURATION_MS = 60000; // 1 minute cache
+    private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
+    private static final String CLAN_RANKING_KEY_PREFIX = "cache:clan:ranking:";
+    private static final long DEFAULT_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
     @SuppressWarnings("unchecked")
     @GetMapping("/streams")
     public List<Map<String, Object>> getStreams() {
-        long currentTime = System.currentTimeMillis();
-        if (cachedStreams != null && (currentTime - lastStreamsFetchTime) < STREAMS_CACHE_DURATION_MS) {
-            return cachedStreams;
-        }
+        // 1) Try Redis cache
+        try {
+            String cached = stringRedisTemplate.opsForValue().get(STREAMS_CACHE_KEY);
+            if (cached != null && !cached.isBlank()) {
+                List<Map<String, Object>> cachedList = objectMapper.readValue(cached, List.class);
+                return cachedList;
+            }
+        } catch (Exception ignored) { }
 
+        // 2) Build fresh result and cache it
         List<Map<String, Object>> result = new ArrayList<>();
-
-        // 1. Fetch and flatten SC2 Pulse streams
         try {
             List<Map<String, Object>> rawStreams = sc2PulseService.getStreams();
             for (Map<String, Object> entry : rawStreams) {
                 try {
                     Map<String, Object> flat = new HashMap<>();
-
-                    // Extract stream info
                     Object streamObj = entry.get("stream");
                     if (streamObj instanceof Map) {
                         Map<String, Object> stream = (Map<String, Object>) streamObj;
@@ -370,19 +379,14 @@ public class SC2Controller {
                         flat.put("service", stream.get("service"));
                         flat.put("userName", stream.get("userName"));
                     }
-
-                    // Extract pro player info
                     Object proObj = entry.get("proPlayer");
                     if (proObj instanceof Map) {
                         Map<String, Object> pro = (Map<String, Object>) proObj;
                         flat.put("proNickname", pro.getOrDefault("nickname", pro.get("proNickname")));
                         flat.put("proTeam", pro.getOrDefault("team", pro.get("proTeam")));
                     }
-
-                    // Extract team/MMR info (could be "ladderTeam" or "team")
                     Object teamObj = entry.get("ladderTeam");
-                    if (teamObj == null)
-                        teamObj = entry.get("team");
+                    if (teamObj == null) teamObj = entry.get("team");
                     if (teamObj instanceof Map) {
                         Map<String, Object> team = (Map<String, Object>) teamObj;
                         flat.put("rating", team.get("rating"));
@@ -392,32 +396,20 @@ public class SC2Controller {
                             if (firstMember instanceof Map) {
                                 Map<String, Object> member = (Map<String, Object>) firstMember;
                                 Object race = member.get("favoriteRace");
-                                if (race == null)
-                                    race = member.get("race");
+                                if (race == null) race = member.get("race");
                                 flat.put("race", race);
                             }
                         }
                     }
-
-                    // Fallback: if entry itself has flat fields
-                    if (!flat.containsKey("userName") && entry.containsKey("userName"))
-                        flat.put("userName", entry.get("userName"));
-                    if (!flat.containsKey("url") && entry.containsKey("url"))
-                        flat.put("url", entry.get("url"));
-                    if (!flat.containsKey("rating") && entry.containsKey("rating"))
-                        flat.put("rating", entry.get("rating"));
-
+                    if (!flat.containsKey("userName") && entry.containsKey("userName")) flat.put("userName", entry.get("userName"));
+                    if (!flat.containsKey("url") && entry.containsKey("url")) flat.put("url", entry.get("url"));
+                    if (!flat.containsKey("rating") && entry.containsKey("rating")) flat.put("rating", entry.get("rating"));
                     flat.put("source", "sc2pulse");
                     result.add(flat);
-                } catch (Exception ignored) {
-                    // Skip malformed entries
-                }
+                } catch (Exception ignored) { }
             }
-        } catch (Exception ignored) {
-            // SC2 Pulse unavailable
-        }
+        } catch (Exception ignored) { }
 
-        // 2. Also add local users who have streamUrl set
         try {
             List<User> allUsers = userMapper.findAll();
             for (User u : allUsers) {
@@ -433,11 +425,12 @@ public class SC2Controller {
                     result.add(flat);
                 }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { }
 
-        cachedStreams = result;
-        lastStreamsFetchTime = currentTime;
+        try {
+            String json = objectMapper.writeValueAsString(result);
+            stringRedisTemplate.opsForValue().set(STREAMS_CACHE_KEY, json, Duration.ofSeconds(DEFAULT_CACHE_TTL_SECONDS));
+        } catch (Exception ignored) { }
 
         return result;
     }

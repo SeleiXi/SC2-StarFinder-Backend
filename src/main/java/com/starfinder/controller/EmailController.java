@@ -34,24 +34,29 @@ public class EmailController {
         String normalizedEmail = email.trim().toLowerCase();
         String clientIp = getClientIp(request);
 
-        // Cooldown per email (60s)
+        // Cooldown per email (60s) and per-IP rate limiting — best-effort when Redis available
         String cooldownKey = EMAIL_COOLDOWN_PREFIX + normalizedEmail;
-        Boolean hasCooldown = stringRedisTemplate.hasKey(cooldownKey);
-        if (Boolean.TRUE.equals(hasCooldown)) {
-            return Result.BadRequest("请求过于频繁，请稍后再试");
-        }
+        try {
+            Boolean hasCooldown = stringRedisTemplate.hasKey(cooldownKey);
+            if (Boolean.TRUE.equals(hasCooldown)) {
+                return Result.BadRequest("请求过于频繁，请稍后再试");
+            }
 
-        // Simple per-IP rate limit: 20/minute
-        String ipKey = IP_RATE_PREFIX + clientIp + ":" + (System.currentTimeMillis() / 60000);
-        Long count = stringRedisTemplate.opsForValue().increment(ipKey);
-        if (count != null && count == 1L) {
-            stringRedisTemplate.expire(ipKey, Duration.ofMinutes(2));
-        }
-        if (count != null && count > 20) {
-            return Result.BadRequest("请求过于频繁，请稍后再试");
-        }
+            // Simple per-IP rate limit: 20/minute
+            String ipKey = IP_RATE_PREFIX + clientIp + ":" + (System.currentTimeMillis() / 60000);
+            Long count = stringRedisTemplate.opsForValue().increment(ipKey);
+            if (count != null && count == 1L) {
+                stringRedisTemplate.expire(ipKey, Duration.ofMinutes(2));
+            }
+            if (count != null && count > 20) {
+                return Result.BadRequest("请求过于频繁，请稍后再试");
+            }
 
-        stringRedisTemplate.opsForValue().set(cooldownKey, "1", Duration.ofSeconds(60));
+            stringRedisTemplate.opsForValue().set(cooldownKey, "1", Duration.ofSeconds(60));
+        } catch (Exception e) {
+            // Redis unavailable — log and continue without rate-limiting to avoid 500 errors
+            System.err.println("Warning: Redis unavailable for email cooldown/rate limit: " + e.getMessage());
+        }
 
         // Generate 6-digit code
         String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));

@@ -26,8 +26,12 @@ public class GmailEmailServiceImpl implements EmailService {
 
     @Override
     public boolean sendVerificationCode(String email, String code) {
-        // Save to Redis with 5-minute expiration
-        stringRedisTemplate.opsForValue().set(EMAIL_PREFIX + email, code, 5, TimeUnit.MINUTES);
+        // Save to Redis with 5-minute expiration (best-effort; don't fail if Redis unavailable)
+        try {
+            stringRedisTemplate.opsForValue().set(EMAIL_PREFIX + email, code, 5, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            System.err.println("Warning: Redis unavailable when storing email code: " + e.getMessage());
+        }
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -49,11 +53,17 @@ public class GmailEmailServiceImpl implements EmailService {
     @Override
     public boolean verifyCode(String email, String code) {
         String key = EMAIL_PREFIX + email;
-        String cachedCode = stringRedisTemplate.opsForValue().get(key);
-        if (cachedCode != null && cachedCode.equals(code)) {
-            stringRedisTemplate.delete(key);
-            return true;
+        try {
+            String cachedCode = stringRedisTemplate.opsForValue().get(key);
+            if (cachedCode != null && cachedCode.equals(code)) {
+                try { stringRedisTemplate.delete(key); } catch (Exception ignore) {}
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            // If Redis is unavailable, do not throw — verification simply fails.
+            System.err.println("Warning: Redis unavailable when verifying email code: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 }

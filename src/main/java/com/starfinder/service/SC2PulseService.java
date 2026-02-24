@@ -10,6 +10,9 @@ import org.springframework.web.client.RestTemplate;
 import com.starfinder.mapper.UserMapper;
 import com.starfinder.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +30,11 @@ public class SC2PulseService {
 
     @Value("${sc2pulse.base-url}")
     private String baseUrl;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public SC2PulseService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -83,10 +91,27 @@ public class SC2PulseService {
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getStreams() {
+        final String cacheKey = "cache:sc2:streams";
         try {
+            // Try Redis cache first
+            try {
+                String cached = stringRedisTemplate.opsForValue().get(cacheKey);
+                if (cached != null && !cached.isBlank()) {
+                    List<Map<String, Object>> cachedList = objectMapper.readValue(cached, List.class);
+                    return cachedList;
+                }
+            } catch (Exception ignored) { }
+
             String url = baseUrl + "/streams";
             ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
-            return response.getBody() != null ? response.getBody() : Collections.emptyList();
+            List<Map<String, Object>> body = response.getBody() != null ? response.getBody() : Collections.emptyList();
+
+            try {
+                String json = objectMapper.writeValueAsString(body);
+                stringRedisTemplate.opsForValue().set(cacheKey, json, Duration.ofHours(24));
+            } catch (Exception ignored) { }
+
+            return body;
         } catch (Exception e) {
             return Collections.emptyList();
         }

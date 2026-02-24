@@ -73,7 +73,8 @@ public class UserController {
     @GetMapping("/match")
     public List<User> findMatches(@RequestParam int mmr, @RequestParam int range,
             @RequestParam(required = false) String race,
-            @RequestParam(required = false) String mode) {
-        return userService.findMatches(mmr, range, race, mode);
+            @RequestParam(required = false) String mode,
+            @RequestParam(required = false) Integer minLevel) {
+        return userService.findMatches(mmr, range, race, mode, minLevel);
     }
 }

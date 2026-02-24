@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/clan")
@@ -23,6 +26,11 @@ public class ClanController {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Value("${sc2pulse.base-url}")
     private String sc2PulseBaseUrl;
 
@@ -33,10 +41,9 @@ public class ClanController {
         0, "青铜", 1, "白银", 2, "黄金", 3, "铂金", 4, "钻石", 5, "大师", 6, "宗师"
     );
 
-    // Cache for clan ranking (1 hour)
-    private final Map<String, List<Map<String, Object>>> cachedRanking = new HashMap<>();
-    private long lastRankingFetch = 0;
-    private static final long CACHE_TTL = 3600000L;
+    // Redis-backed cache keys
+    private static final String CLAN_RANKING_CACHE_PREFIX = "cache:clan:ranking:";
+    private static final long CLAN_RANKING_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
     @SuppressWarnings("unchecked")
     @GetMapping("/ranking")
@@ -45,12 +52,16 @@ public class ClanController {
             @RequestParam(defaultValue = "US") String region,
             @RequestParam(defaultValue = "avgRating") String sortBy) {
         try {
-            String cacheKey = query + "_" + region + "_" + sortBy;
-            long now = System.currentTimeMillis();
-
-            // Use cache for empty query
-            if (query.isEmpty() && (now - lastRankingFetch) < CACHE_TTL && cachedRanking.containsKey(cacheKey)) {
-                return Result.success(cachedRanking.get(cacheKey));
+            String cacheKey = CLAN_RANKING_CACHE_PREFIX + region + ":" + sortBy;
+            // Use Redis cache for empty query
+            if (query.isEmpty()) {
+                try {
+                    String cached = stringRedisTemplate.opsForValue().get(cacheKey);
+                    if (cached != null && !cached.isBlank()) {
+                        List<Map<String, Object>> cachedList = objectMapper.readValue(cached, List.class);
+                        return Result.success(cachedList);
+                    }
+                } catch (Exception ignored) { }
             }
 
             String url = sc2PulseBaseUrl + "/clans";
@@ -100,8 +111,10 @@ public class ClanController {
             });
 
             if (query.isEmpty()) {
-                cachedRanking.put(cacheKey, result);
-                lastRankingFetch = now;
+                try {
+                    String json = objectMapper.writeValueAsString(result);
+                    stringRedisTemplate.opsForValue().set(cacheKey, json, Duration.ofSeconds(CLAN_RANKING_TTL_SECONDS));
+                } catch (Exception ignored) { }
             }
 
             return Result.success(result);
