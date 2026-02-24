@@ -90,4 +90,7 @@ public interface UserMapper {
 
     @Delete("DELETE FROM users WHERE id = #{id}")
     void deleteById(Long id);
+
+    @Select("SELECT COUNT(*) FROM users WHERE role = #{role}")
+    long countByRole(@Param("role") String role);
 }

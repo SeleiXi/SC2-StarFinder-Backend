@@ -105,23 +105,32 @@ public class AdminController {
 
         boolean targetIsAdmin = "admin".equals(target.getRole()) || "super_admin".equals(target.getRole());
         boolean targetIsSuperAdmin = "super_admin".equals(target.getRole());
+        boolean newRoleIsSuperAdmin = "super_admin".equals(role);
 
         if (!isSuperAdmin(adminId)) {
-            // Normal admin
+            // Normal admin permissions
             if (targetIsAdmin) {
                 return Result.BadRequest("普通管理员不能修改其他管理员的角色");
+            }
+            if (targetIsSuperAdmin) {
+                return Result.BadRequest("普通管理员不能修改超级管理员的角色");
             }
             if (!"user".equals(role) && !"admin".equals(role)) {
                 return Result.BadRequest("普通管理员只能设置 user 或 admin 角色");
             }
-            if ("admin".equals(role)) {
-                // Admin can promote to admin? "管理员不应该能取消掉自己或者其他人的管理员身份"
-                // So admin can promote, but not demote.
+            if (newRoleIsSuperAdmin) {
+                return Result.BadRequest("普通管理员无法设置超级管理员角色");
             }
         } else {
-            // Super admin
-            // Can change anyone's role except self (already checked above)
-            // But maybe prevent removing the last super admin?
+            // Super admin permissions
+            // Cannot demote another super admin unless there are other super admins
+            if (targetIsSuperAdmin && !newRoleIsSuperAdmin) {
+                // Check if there are other super admins
+                long superAdminCount = userMapper.countByRole("super_admin");
+                if (superAdminCount <= 1) {
+                    return Result.BadRequest("无法取消最后一个超级管理员");
+                }
+            }
         }
 
         target.setRole(role);

@@ -11,7 +11,6 @@ import com.starfinder.mapper.UserMapper;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.UserService;
 import com.starfinder.service.EmailService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -26,9 +25,6 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private EmailService emailService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Override
     public Result<User> createUser(RegisterDTO registerDTO) {
@@ -58,7 +54,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setEmail(registerDTO.getEmail().trim().toLowerCase());
-        user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
+        user.setPassword(registerDTO.getPassword());
         
         user.setBattleTag(registerDTO.getBattleTag());
         user.setQq(registerDTO.getQq());
@@ -110,18 +106,7 @@ public class UserServiceImpl implements UserService {
         }
         if (password != null && user.getPassword() != null) {
             String stored = user.getPassword();
-            boolean ok;
-
-            // Legacy compatibility: old records may store plaintext password.
-            if (looksLikeBcrypt(stored)) {
-                ok = passwordEncoder.matches(password, stored);
-            } else {
-                ok = password.equals(stored);
-                if (ok) {
-                    // Migrate plaintext to BCrypt on successful login.
-                    userMapper.updatePassword(user.getEmail(), passwordEncoder.encode(password));
-                }
-            }
+            boolean ok = password.equals(stored);
 
             if (ok) {
                 user.setPassword(null); // Don't return password
@@ -165,7 +150,7 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return Result.BadRequest("该邮箱未注册");
         }
-        userMapper.updatePassword(normalizedEmail, passwordEncoder.encode(newPassword));
+        userMapper.updatePassword(normalizedEmail, newPassword);
         return Result.success("密码已重置");
     }
 
@@ -204,7 +189,7 @@ public class UserServiceImpl implements UserService {
                 return Result.BadRequest("密码太弱：需至少8位");
             }
             // Password is updated via a dedicated mapper method.
-            userMapper.updatePasswordById(userId, passwordEncoder.encode(dto.getPassword()));
+            userMapper.updatePasswordById(userId, dto.getPassword());
         }
 
         if (dto.getBattleTagCN() != null)
@@ -234,10 +219,6 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
         user.setPassword(null);
         return Result.success(user);
-    }
-
-    private static boolean looksLikeBcrypt(String stored) {
-        return stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$");
     }
 
     private void syncUserMMR(User user) {
