@@ -2,6 +2,7 @@ package com.starfinder.controller;
 
 import com.starfinder.dto.Result;
 import com.starfinder.service.EmailService;
+import com.starfinder.mapper.UserMapper;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -20,18 +21,34 @@ public class EmailController {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private UserMapper userMapper;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String EMAIL_COOLDOWN_PREFIX = "email:send:cooldown:";
     private static final String IP_RATE_PREFIX = "email:send:ip:";
 
     @PostMapping("/send")
-    public Result<String> sendCode(@RequestParam String email, HttpServletRequest request) {
+    public Result<String> sendCode(@RequestParam String email,
+                                   @RequestParam(required = false) Boolean requireRegistered,
+                                   HttpServletRequest request) {
         if (email == null || email.isEmpty()) {
             return Result.BadRequest("邮箱不能为空");
         }
 
         String normalizedEmail = email.trim().toLowerCase();
+        // If this send request requires the email to already be registered (login/reset flows),
+        // check the DB and return a clear error if not found.
+        if (Boolean.TRUE.equals(requireRegistered)) {
+            try {
+                if (userMapper.findByEmail(normalizedEmail) == null) {
+                    return Result.BadRequest("该邮箱未注册");
+                }
+            } catch (Exception e) {
+                // If DB check fails for unexpected reasons, log and allow send to proceed conservatively.
+                System.err.println("Warning: user existence check failed: " + e.getMessage());
+            }
+        }
         String clientIp = getClientIp(request);
 
         // Cooldown per email (60s) and per-IP rate limiting — best-effort when Redis available
