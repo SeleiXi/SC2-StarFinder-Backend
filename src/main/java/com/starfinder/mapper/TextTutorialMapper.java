@@ -21,6 +21,12 @@ public interface TextTutorialMapper {
     @Select("SELECT DISTINCT category FROM text_tutorials WHERE category IS NOT NULL AND category != '' ORDER BY category")
     List<String> findDistinctCategories();
 
+    @Select("SELECT * FROM text_tutorials WHERE id = #{id}")
+    TextTutorial findById(@Param("id") Long id);
+
+    @Update("UPDATE text_tutorials SET title=#{title}, category=#{category}, content=#{content}, author_tag=#{authorTag} WHERE id=#{id}")
+    void update(TextTutorial tutorial);
+
     @Delete("DELETE FROM text_tutorials WHERE id = #{id}")
     void deleteById(Long id);
 }

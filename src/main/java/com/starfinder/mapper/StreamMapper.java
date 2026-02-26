@@ -19,4 +19,10 @@ public interface StreamMapper {
 
     @Select("SELECT * FROM streams WHERE battle_tag = #{battleTag}")
     Stream findByBattleTag(String battleTag);
+
+    @Select("SELECT * FROM streams WHERE id = #{id}")
+    Stream findById(@Param("id") Long id);
+
+    @Update("UPDATE streams SET name=#{name}, stream_url=#{streamUrl}, description=#{description}, mmr=#{mmr}, race=#{race}, platform=#{platform} WHERE id=#{id}")
+    void update(Stream stream);
 }

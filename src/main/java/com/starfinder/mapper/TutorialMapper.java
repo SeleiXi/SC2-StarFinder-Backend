@@ -22,6 +22,9 @@ public interface TutorialMapper {
     @Select("SELECT * FROM tutorials WHERE id = #{id}")
     Tutorial findById(Long id);
 
+    @Update("UPDATE tutorials SET title=#{title}, url=#{url}, category=#{category}, description=#{description}, author=#{author} WHERE id=#{id}")
+    void update(Tutorial tutorial);
+
     @Delete("DELETE FROM tutorials WHERE id = #{id}")
     void deleteById(Long id);
 

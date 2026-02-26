@@ -15,6 +15,12 @@ public interface ClanRecruitmentMapper {
     @Select("SELECT * FROM clan_recruitments ORDER BY created_at DESC")
     List<ClanRecruitment> findAll();
 
+    @Select("SELECT * FROM clan_recruitments WHERE id = #{id}")
+    ClanRecruitment findById(@Param("id") Long id);
+
+    @Update("UPDATE clan_recruitments SET clan_name=#{clanName}, clan_tag=#{clanTag}, region=#{region}, min_mmr=#{minMmr}, max_mmr=#{maxMmr}, description=#{description}, contact=#{contact} WHERE id=#{id}")
+    void update(ClanRecruitment recruitment);
+
     @Delete("DELETE FROM clan_recruitments WHERE id = #{id}")
     void deleteById(Long id);
 }

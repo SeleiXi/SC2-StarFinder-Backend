@@ -186,6 +186,21 @@ public class AdminController {
         return Result.success();
     }
 
+    @PutMapping("/cheaters/{id}")
+    public Result<Cheater> updateCheater(@PathVariable Long id, @RequestBody Cheater body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Cheater existing = cheaterMapper.findById(id);
+        if (existing == null) return Result.BadRequest("记录不存在");
+        if (body.getBattleTag() != null) existing.setBattleTag(body.getBattleTag());
+        if (body.getCheatType() != null) existing.setCheatType(body.getCheatType());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getStatus() != null) existing.setStatus(body.getStatus());
+        if (body.getMmr() != null) existing.setMmr(body.getMmr());
+        if (body.getRace() != null) existing.setRace(body.getRace());
+        cheaterMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Events CRUD ============
     @GetMapping("/events")
     public Result<List<Event>> listAllEvents(@RequestParam Long adminId) {
@@ -221,6 +236,24 @@ public class AdminController {
         return Result.success();
     }
 
+    @PutMapping("/events/{id}")
+    public Result<Event> updateEvent(@PathVariable Long id, @RequestBody Event body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Event existing = eventMapper.findById(id);
+        if (existing == null) return Result.BadRequest("赛事不存在");
+        if (body.getTitle() != null) existing.setTitle(body.getTitle());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getRules() != null) existing.setRules(body.getRules());
+        if (body.getRewards() != null) existing.setRewards(body.getRewards());
+        if (body.getContactLink() != null) existing.setContactLink(body.getContactLink());
+        if (body.getGroupLink() != null) existing.setGroupLink(body.getGroupLink());
+        if (body.getStatus() != null) existing.setStatus(body.getStatus());
+        if (body.getRegion() != null) existing.setRegion(body.getRegion());
+        if (body.getStartTime() != null) existing.setStartTime(body.getStartTime());
+        eventMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Tutorials CRUD ============
     @GetMapping("/tutorials")
     public Result<List<Tutorial>> listAllTutorials(@RequestParam Long adminId) {
@@ -243,6 +276,20 @@ public class AdminController {
         return tutorialService.deleteTutorial(id);
     }
 
+    @PutMapping("/tutorials/{id}")
+    public Result<Tutorial> updateTutorial(@PathVariable Long id, @RequestBody Tutorial body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Tutorial existing = tutorialMapper.findById(id);
+        if (existing == null) return Result.BadRequest("教程不存在");
+        if (body.getTitle() != null) existing.setTitle(body.getTitle());
+        if (body.getUrl() != null) existing.setUrl(body.getUrl());
+        if (body.getCategory() != null) existing.setCategory(body.getCategory());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getAuthor() != null) existing.setAuthor(body.getAuthor());
+        tutorialMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Streams ============
     @GetMapping("/streams")
     public Result<List<Stream>> listAllStreams(@RequestParam Long adminId) {
@@ -255,6 +302,21 @@ public class AdminController {
         if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
         streamMapper.deleteById(id);
         return Result.success();
+    }
+
+    @PutMapping("/streams/{id}")
+    public Result<Stream> updateStream(@PathVariable Long id, @RequestBody Stream body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Stream existing = streamMapper.findById(id);
+        if (existing == null) return Result.BadRequest("直播不存在");
+        if (body.getName() != null) existing.setName(body.getName());
+        if (body.getStreamUrl() != null) existing.setStreamUrl(body.getStreamUrl());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getMmr() != null) existing.setMmr(body.getMmr());
+        if (body.getRace() != null) existing.setRace(body.getRace());
+        if (body.getPlatform() != null) existing.setPlatform(body.getPlatform());
+        streamMapper.update(existing);
+        return Result.success(existing);
     }
 
     // ============ Clan Recruitments ============
@@ -271,6 +333,22 @@ public class AdminController {
         return Result.success();
     }
 
+    @PutMapping("/clan-recruitments/{id}")
+    public Result<ClanRecruitment> updateClanRecruitment(@PathVariable Long id, @RequestBody ClanRecruitment body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        ClanRecruitment existing = clanRecruitmentMapper.findById(id);
+        if (existing == null) return Result.BadRequest("招募不存在");
+        if (body.getClanName() != null) existing.setClanName(body.getClanName());
+        if (body.getClanTag() != null) existing.setClanTag(body.getClanTag());
+        if (body.getRegion() != null) existing.setRegion(body.getRegion());
+        if (body.getMinMmr() != null) existing.setMinMmr(body.getMinMmr());
+        if (body.getMaxMmr() != null) existing.setMaxMmr(body.getMaxMmr());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getContact() != null) existing.setContact(body.getContact());
+        clanRecruitmentMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Coaching Posts ============
     @GetMapping("/coaching-posts")
     public Result<List<CoachingPost>> listAllCoachingPosts(@RequestParam Long adminId) {
@@ -283,6 +361,22 @@ public class AdminController {
         if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
         coachingPostMapper.deleteById(id);
         return Result.success();
+    }
+
+    @PutMapping("/coaching-posts/{id}")
+    public Result<CoachingPost> updateCoachingPost(@PathVariable Long id, @RequestBody CoachingPost body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        CoachingPost existing = coachingPostMapper.findById(id);
+        if (existing == null) return Result.BadRequest("教练帖不存在");
+        if (body.getTitle() != null) existing.setTitle(body.getTitle());
+        if (body.getRace() != null) existing.setRace(body.getRace());
+        if (body.getMmr() != null) existing.setMmr(body.getMmr());
+        if (body.getPriceInfo() != null) existing.setPriceInfo(body.getPriceInfo());
+        if (body.getContact() != null) existing.setContact(body.getContact());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getPostType() != null) existing.setPostType(body.getPostType());
+        coachingPostMapper.update(existing);
+        return Result.success(existing);
     }
 
     // ============ Public Reports ============
@@ -299,6 +393,19 @@ public class AdminController {
         return Result.success();
     }
 
+    @PutMapping("/public-reports/{id}")
+    public Result<PublicReport> updatePublicReport(@PathVariable Long id, @RequestBody PublicReport body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        PublicReport existing = publicReportMapper.findById(id);
+        if (existing == null) return Result.BadRequest("报告不存在");
+        if (body.getGameId() != null) existing.setGameId(body.getGameId());
+        if (body.getMmrMin() != null) existing.setMmrMin(body.getMmrMin());
+        if (body.getMmrMax() != null) existing.setMmrMax(body.getMmrMax());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        publicReportMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Text Tutorials ============
     @GetMapping("/text-tutorials")
     public Result<List<TextTutorial>> listAllTextTutorials(@RequestParam Long adminId) {
@@ -313,6 +420,19 @@ public class AdminController {
         return Result.success();
     }
 
+    @PutMapping("/text-tutorials/{id}")
+    public Result<TextTutorial> updateTextTutorial(@PathVariable Long id, @RequestBody TextTutorial body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        TextTutorial existing = textTutorialMapper.findById(id);
+        if (existing == null) return Result.BadRequest("文字教程不存在");
+        if (body.getTitle() != null) existing.setTitle(body.getTitle());
+        if (body.getCategory() != null) existing.setCategory(body.getCategory());
+        if (body.getContent() != null) existing.setContent(body.getContent());
+        if (body.getAuthorTag() != null) existing.setAuthorTag(body.getAuthorTag());
+        textTutorialMapper.update(existing);
+        return Result.success(existing);
+    }
+
     // ============ Replays ============
     @GetMapping("/replays")
     public Result<List<ReplayFile>> listAllReplays(@RequestParam Long adminId) {
@@ -325,5 +445,17 @@ public class AdminController {
         if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
         replayFileMapper.deleteById(id);
         return Result.success();
+    }
+
+    @PutMapping("/replays/{id}")
+    public Result<ReplayFile> updateReplay(@PathVariable Long id, @RequestBody ReplayFile body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        ReplayFile existing = replayFileMapper.findById(id);
+        if (existing == null) return Result.BadRequest("录像不存在");
+        if (body.getTitle() != null) existing.setTitle(body.getTitle());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getCategory() != null) existing.setCategory(body.getCategory());
+        replayFileMapper.update(existing);
+        return Result.success(existing);
     }
 }

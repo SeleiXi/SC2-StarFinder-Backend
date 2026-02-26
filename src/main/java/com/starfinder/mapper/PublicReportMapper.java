@@ -18,6 +18,12 @@ public interface PublicReportMapper {
     @Select("SELECT * FROM public_reports WHERE LOWER(game_id) LIKE CONCAT('%', LOWER(#{gameId}), '%') ORDER BY created_at DESC")
     List<PublicReport> searchByGameId(@Param("gameId") String gameId);
 
+    @Select("SELECT * FROM public_reports WHERE id = #{id}")
+    PublicReport findById(@Param("id") Long id);
+
+    @Update("UPDATE public_reports SET game_id=#{gameId}, mmr_min=#{mmrMin}, mmr_max=#{mmrMax}, description=#{description} WHERE id=#{id}")
+    void update(PublicReport report);
+
     @Delete("DELETE FROM public_reports WHERE id = #{id}")
     void deleteById(Long id);
 }

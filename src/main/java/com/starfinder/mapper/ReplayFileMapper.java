@@ -18,6 +18,12 @@ public interface ReplayFileMapper {
     @Select("SELECT * FROM replay_files WHERE category = #{category} ORDER BY created_at DESC")
     List<ReplayFile> findByCategory(@Param("category") String category);
 
+    @Select("SELECT * FROM replay_files WHERE id = #{id}")
+    ReplayFile findById(@Param("id") Long id);
+
+    @Update("UPDATE replay_files SET title=#{title}, description=#{description}, category=#{category} WHERE id=#{id}")
+    void update(ReplayFile replay);
+
     @Delete("DELETE FROM replay_files WHERE id = #{id}")
     void deleteById(Long id);
 

@@ -21,6 +21,9 @@ public interface CoachingPostMapper {
     @Select("SELECT * FROM coaching_posts WHERE id = #{id}")
     CoachingPost findById(@Param("id") Long id);
 
+    @Update("UPDATE coaching_posts SET title=#{title}, race=#{race}, mmr=#{mmr}, price_info=#{priceInfo}, contact=#{contact}, description=#{description}, post_type=#{postType} WHERE id=#{id}")
+    void update(CoachingPost post);
+
     @Delete("DELETE FROM coaching_posts WHERE id = #{id}")
     void deleteById(Long id);
 }

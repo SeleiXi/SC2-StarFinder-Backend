@@ -28,6 +28,9 @@ public interface CheaterMapper {
     @Update("UPDATE cheaters SET status = #{status} WHERE id = #{id}")
     void updateStatus(@Param("id") Long id, @Param("status") String status);
 
+    @Update("UPDATE cheaters SET battle_tag=#{battleTag}, cheat_type=#{cheatType}, description=#{description}, status=#{status}, mmr=#{mmr}, race=#{race} WHERE id=#{id}")
+    void update(Cheater cheater);
+
     @Delete("DELETE FROM cheaters WHERE id = #{id}")
     void deleteById(Long id);
 }

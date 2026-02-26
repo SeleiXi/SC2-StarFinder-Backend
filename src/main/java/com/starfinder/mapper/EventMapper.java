@@ -26,6 +26,9 @@ public interface EventMapper {
     @Update("UPDATE events SET status = #{status} WHERE id = #{id}")
     void updateStatus(@Param("id") Long id, @Param("status") String status);
 
+    @Update("UPDATE events SET title=#{title}, description=#{description}, rules=#{rules}, rewards=#{rewards}, contact_link=#{contactLink}, group_link=#{groupLink}, status=#{status}, region=#{region}, start_time=#{startTime} WHERE id=#{id}")
+    void update(Event event);
+
     @Delete("DELETE FROM events WHERE id = #{id}")
     void deleteById(Long id);
 }
