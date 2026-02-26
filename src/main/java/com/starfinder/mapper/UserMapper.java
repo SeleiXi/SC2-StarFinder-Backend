@@ -67,7 +67,7 @@ public interface UserMapper {
             @Param("race") String race);
 
     @Update("UPDATE users SET battle_tag=#{battleTag}, battle_tag_cn=#{battleTagCN}, battle_tag_us=#{battleTagUS}, battle_tag_eu=#{battleTagEU}, battle_tag_kr=#{battleTagKR}, character_id=#{characterId}, race=#{race}, commander=#{commander}, coop_level=#{coopLevel}, " +
-            "mmr=#{mmr}, mmr_terran=#{mmrTerran}, mmr_zerg=#{mmrZerg}, mmr_protoss=#{mmrProtoss}, mmr_random=#{mmrRandom}, mmr_2v2=#{mmr2v2}, mmr_3v3=#{mmr3v3}, mmr_4v4=#{mmr4v4}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role} WHERE id=#{id}")
+            "mmr=#{mmr}, mmr_terran=#{mmrTerran}, mmr_zerg=#{mmrZerg}, mmr_protoss=#{mmrProtoss}, mmr_random=#{mmrRandom}, mmr_2v2=#{mmr2v2}, mmr_3v3=#{mmr3v3}, mmr_4v4=#{mmr4v4}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role}, avatar=#{avatar} WHERE id=#{id}")
     void update(User user);
 
     @Select("SELECT * FROM users WHERE commander IS NOT NULL AND commander != ''")
@@ -87,4 +87,7 @@ public interface UserMapper {
 
     @Delete("DELETE FROM users WHERE id = #{id}")
     void deleteById(Long id);
+
+    @Select("SELECT COUNT(*) FROM users WHERE role = #{role}")
+    long countByRole(@Param("role") String role);
 }

@@ -22,11 +22,20 @@ public class TutorialController {
     @Autowired
     private TutorialMapper tutorialMapper;
 
+    @Autowired
+    private com.starfinder.mapper.UserMapper userMapper;
+
     @PostMapping
     public Result<Tutorial> createTutorial(@RequestBody TutorialDTO dto) {
         AuthPrincipal principal = AuthContext.get();
         if (principal == null) return Result.BadRequest("需要登录");
-        if (!principal.isAdmin()) return Result.BadRequest("无权限");
+        // Auto-fill author with user's battleTag if not provided
+        if (dto.getAuthor() == null || dto.getAuthor().isEmpty()) {
+            com.starfinder.entity.User user = userMapper.findById(principal.userId());
+            if (user != null && user.getBattleTag() != null) {
+                dto.setAuthor(user.getBattleTag());
+            }
+        }
         return tutorialService.createTutorial(dto);
     }
 

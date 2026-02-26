@@ -22,6 +22,15 @@ public class ProfileUpdateDTO {
     private Integer mmr3v3;
     private Integer mmr4v4;
     private String password;
+    private String avatar;
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
 
     public String getPassword() {
         return password;

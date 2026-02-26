@@ -77,6 +77,17 @@ public class User {
     @Column(length = 20)
     private String role;
 
+    @Column(length = 500)
+    private String avatar;
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
     public Long getId() {
         return id;
     }

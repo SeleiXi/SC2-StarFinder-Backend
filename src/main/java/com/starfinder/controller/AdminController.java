@@ -24,6 +24,18 @@ public class AdminController {
     @Autowired
     private TutorialMapper tutorialMapper;
     @Autowired
+    private StreamMapper streamMapper;
+    @Autowired
+    private ClanRecruitmentMapper clanRecruitmentMapper;
+    @Autowired
+    private CoachingPostMapper coachingPostMapper;
+    @Autowired
+    private PublicReportMapper publicReportMapper;
+    @Autowired
+    private TextTutorialMapper textTutorialMapper;
+    @Autowired
+    private ReplayFileMapper replayFileMapper;
+    @Autowired
     private UserService userService;
     @Autowired
     private CheaterService cheaterService;
@@ -229,5 +241,89 @@ public class AdminController {
         if (!isAdmin(adminId))
             return Result.BadRequest("无管理员权限");
         return tutorialService.deleteTutorial(id);
+    }
+
+    // ============ Streams ============
+    @GetMapping("/streams")
+    public Result<List<Stream>> listAllStreams(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(streamMapper.findAll());
+    }
+
+    @DeleteMapping("/streams/{id}")
+    public Result<Void> deleteStream(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        streamMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Clan Recruitments ============
+    @GetMapping("/clan-recruitments")
+    public Result<List<ClanRecruitment>> listAllClanRecruitments(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(clanRecruitmentMapper.findAll());
+    }
+
+    @DeleteMapping("/clan-recruitments/{id}")
+    public Result<Void> deleteClanRecruitment(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        clanRecruitmentMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Coaching Posts ============
+    @GetMapping("/coaching-posts")
+    public Result<List<CoachingPost>> listAllCoachingPosts(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(coachingPostMapper.findAll());
+    }
+
+    @DeleteMapping("/coaching-posts/{id}")
+    public Result<Void> deleteCoachingPost(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        coachingPostMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Public Reports ============
+    @GetMapping("/public-reports")
+    public Result<List<PublicReport>> listAllPublicReports(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(publicReportMapper.findAll());
+    }
+
+    @DeleteMapping("/public-reports/{id}")
+    public Result<Void> deletePublicReport(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        publicReportMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Text Tutorials ============
+    @GetMapping("/text-tutorials")
+    public Result<List<TextTutorial>> listAllTextTutorials(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(textTutorialMapper.findAll());
+    }
+
+    @DeleteMapping("/text-tutorials/{id}")
+    public Result<Void> deleteTextTutorial(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        textTutorialMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Replays ============
+    @GetMapping("/replays")
+    public Result<List<ReplayFile>> listAllReplays(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(replayFileMapper.findAll());
+    }
+
+    @DeleteMapping("/replays/{id}")
+    public Result<Void> deleteReplay(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        replayFileMapper.deleteById(id);
+        return Result.success();
     }
 }
