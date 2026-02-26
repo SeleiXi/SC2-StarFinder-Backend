@@ -11,6 +11,7 @@ import com.starfinder.mapper.UserMapper;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.UserService;
 import com.starfinder.service.EmailService;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
 
@@ -25,6 +26,11 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
 
     @Override
     public Result<User> createUser(RegisterDTO registerDTO) {
@@ -193,6 +199,12 @@ public class UserServiceImpl implements UserService {
         if (dto.getMmr4v4() != null) user.setMmr4v4(dto.getMmr4v4());
 
         userMapper.update(user);
+        
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         user.setPassword(null);
         return Result.success(user);
     }

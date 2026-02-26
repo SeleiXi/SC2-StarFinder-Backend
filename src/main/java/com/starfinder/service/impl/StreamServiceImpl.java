@@ -10,6 +10,7 @@ import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.SC2PulseService;
 import com.starfinder.service.StreamService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,6 +26,11 @@ public class StreamServiceImpl implements StreamService {
 
     @Autowired
     private SC2PulseService sc2PulseService;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
 
     @Override
     public Result<Stream> addStream(Stream stream) {
@@ -60,6 +66,12 @@ public class StreamServiceImpl implements StreamService {
         }
 
         streamMapper.insert(stream);
+        
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         return Result.success(stream);
     }
 
@@ -81,6 +93,12 @@ public class StreamServiceImpl implements StreamService {
             return Result.BadRequest("无权限删除直播");
         }
         streamMapper.deleteById(id);
+        
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         return Result.success();
     }
 }

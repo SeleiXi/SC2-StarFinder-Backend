@@ -351,6 +351,7 @@ public class SC2Controller {
     private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
     private static final String CLAN_RANKING_KEY_PREFIX = "cache:clan:ranking:";
     private static final long DEFAULT_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+    private static final long STREAMS_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes for streams
 
     @SuppressWarnings("unchecked")
     @GetMapping("/streams")
@@ -413,11 +414,14 @@ public class SC2Controller {
         try {
             List<User> allUsers = userMapper.findAll();
             for (User u : allUsers) {
-                if (u.getStreamUrl() != null && !u.getStreamUrl().isEmpty()) {
+                String streamUrl = u.getStreamUrl();
+                // Only include users with a valid URL (must start with http:// or https://)
+                if (streamUrl != null && !streamUrl.isBlank()
+                        && (streamUrl.startsWith("http://") || streamUrl.startsWith("https://"))) {
                     Map<String, Object> flat = new HashMap<>();
                     flat.put("userName", u.getBattleTag() != null ? u.getBattleTag() : u.getEmail());
-                    flat.put("url", u.getStreamUrl());
-                    flat.put("streamUrl", u.getStreamUrl());
+                    flat.put("url", streamUrl);
+                    flat.put("streamUrl", streamUrl);
                     flat.put("rating", u.getMmr());
                     flat.put("race", u.getRace());
                     flat.put("service", "社区");
@@ -429,7 +433,7 @@ public class SC2Controller {
 
         try {
             String json = objectMapper.writeValueAsString(result);
-            stringRedisTemplate.opsForValue().set(STREAMS_CACHE_KEY, json, Duration.ofSeconds(DEFAULT_CACHE_TTL_SECONDS));
+            stringRedisTemplate.opsForValue().set(STREAMS_CACHE_KEY, json, Duration.ofSeconds(STREAMS_CACHE_TTL_SECONDS));
         } catch (Exception ignored) { }
 
         return result;

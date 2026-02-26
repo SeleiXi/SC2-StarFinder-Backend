@@ -7,6 +7,7 @@ import com.starfinder.security.AuthContext;
 import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,6 +44,11 @@ public class AdminController {
     private EventService eventService;
     @Autowired
     private TutorialService tutorialService;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
 
     // ============ Auth Check ============
     private boolean isAdmin(Long userId) {
@@ -98,6 +104,12 @@ public class AdminController {
         }
 
         userMapper.deleteById(id);
+        
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         return Result.success();
     }
 
@@ -301,6 +313,12 @@ public class AdminController {
     public Result<Void> deleteStream(@PathVariable Long id, @RequestParam Long adminId) {
         if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
         streamMapper.deleteById(id);
+        
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         return Result.success();
     }
 
@@ -316,6 +334,12 @@ public class AdminController {
         if (body.getRace() != null) existing.setRace(body.getRace());
         if (body.getPlatform() != null) existing.setPlatform(body.getPlatform());
         streamMapper.update(existing);
+
+        // Invalidate SC2 streams cache
+        try {
+            stringRedisTemplate.delete(STREAMS_CACHE_KEY);
+        } catch (Exception ignored) {}
+
         return Result.success(existing);
     }
 

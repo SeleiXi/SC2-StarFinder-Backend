@@ -91,7 +91,7 @@ public class SC2PulseService {
      */
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> getStreams() {
-        final String cacheKey = "cache:sc2:streams";
+        final String cacheKey = "cache:sc2pulse:streams:raw";
         try {
             // Try Redis cache first
             try {
@@ -108,7 +108,7 @@ public class SC2PulseService {
 
             try {
                 String json = objectMapper.writeValueAsString(body);
-                stringRedisTemplate.opsForValue().set(cacheKey, json, Duration.ofHours(24));
+                stringRedisTemplate.opsForValue().set(cacheKey, json, Duration.ofMinutes(5));
             } catch (Exception ignored) { }
 
             return body;
