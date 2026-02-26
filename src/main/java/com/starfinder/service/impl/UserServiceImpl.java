@@ -52,14 +52,15 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("验证码无效或已过期");
         }
 
-        // Check if email already exists
-        User existingEmail = userMapper.findByEmail(registerDTO.getEmail());
+        // Normalize email and check if it already exists
+        String normalizedEmail = registerDTO.getEmail().trim().toLowerCase();
+        User existingEmail = userMapper.findByEmail(normalizedEmail);
         if (existingEmail != null) {
             return Result.BadRequest("该邮箱已注册");
         }
 
         User user = new User();
-        user.setEmail(registerDTO.getEmail());
+        user.setEmail(normalizedEmail);
         user.setPassword(registerDTO.getPassword());
         
         user.setBattleTag(registerDTO.getBattleTag());
@@ -85,7 +86,12 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (Exception e) {
+            // Likely a duplicate key in concurrent registration; return friendly message
+            return Result.BadRequest("该邮箱已注册");
+        }
         user.setPassword(null); // Don't return password
         return Result.success(user);
     }
@@ -94,6 +100,10 @@ public class UserServiceImpl implements UserService {
     public Result<User> verifyUser(RegisterDTO loginDTO) {
         String identifier = loginDTO.getEmail(); // Use email as identifier
         String password = loginDTO.getPassword();
+
+        if (identifier != null && identifier.contains("@")) {
+            identifier = identifier.trim().toLowerCase();
+        }
         
         // Try to find by email
         User user = userMapper.findByEmail(identifier);
@@ -106,19 +116,28 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return Result.BadRequest("用户不存在");
         }
-        if (password != null && password.equals(user.getPassword())) {
-            user.setPassword(null); // Don't return password
-            return Result.success(user);
+        if (password != null && user.getPassword() != null) {
+            String stored = user.getPassword();
+            boolean ok = password.equals(stored);
+
+            if (ok) {
+                user.setPassword(null); // Don't return password
+                return Result.success(user);
+            }
         }
         return Result.BadRequest("密码错误");
     }
 
     @Override
     public Result<User> verifyUserByCode(String email, String code) {
-        if (!emailService.verifyCode(email, code)) {
+        if (email == null || email.isBlank() || code == null || code.isBlank()) {
+            return Result.BadRequest("参数错误");
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        if (!emailService.verifyCode(normalizedEmail, code)) {
             return Result.BadRequest("验证码错误或已过期");
         }
-        User user = userMapper.findByEmail(email);
+        User user = userMapper.findByEmail(normalizedEmail);
         if (user == null) {
             return Result.BadRequest("用户不存在");
         }
@@ -128,14 +147,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result<String> resetPassword(String email, String code, String newPassword) {
-        if (!emailService.verifyCode(email, code)) {
+        if (email == null || email.isBlank() || code == null || code.isBlank() || newPassword == null) {
+            return Result.BadRequest("参数错误");
+        }
+        if (newPassword.length() < 8) {
+            return Result.BadRequest("密码太弱：需至少8位");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+        if (!emailService.verifyCode(normalizedEmail, code)) {
             return Result.BadRequest("验证码错误或已过期");
         }
-        User user = userMapper.findByEmail(email);
+        User user = userMapper.findByEmail(normalizedEmail);
         if (user == null) {
             return Result.BadRequest("该邮箱未注册");
         }
-        userMapper.updatePassword(email, newPassword);
+        userMapper.updatePassword(normalizedEmail, newPassword);
         return Result.success("密码已重置");
     }
 
@@ -169,8 +196,13 @@ public class UserServiceImpl implements UserService {
             user.setSignature(dto.getSignature());
         if (dto.getRegion() != null)
             user.setRegion(dto.getRegion());
-        if (dto.getPassword() != null && !dto.getPassword().isEmpty())
-            user.setPassword(dto.getPassword());
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            if (dto.getPassword().length() < 8) {
+                return Result.BadRequest("密码太弱：需至少8位");
+            }
+            // Password is updated via a dedicated mapper method.
+            userMapper.updatePasswordById(userId, dto.getPassword());
+        }
 
         if (dto.getBattleTagCN() != null)
             user.setBattleTagCN(dto.getBattleTagCN());

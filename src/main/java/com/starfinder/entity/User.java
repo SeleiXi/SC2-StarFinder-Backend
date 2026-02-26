@@ -59,7 +59,7 @@ public class User {
     @Column(name = "coop_level", length = 20)
     private String coopLevel;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(nullable = false)
