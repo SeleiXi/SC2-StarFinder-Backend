@@ -4,7 +4,7 @@ public class RegisterDTO {
     private String email;
     private String emailCode;
     private String password;
-    private String battleTag;
+    private String nickname;
     private String qq;
     private String region;
 
@@ -32,12 +32,12 @@ public class RegisterDTO {
         this.password = password;
     }
 
-    public String getBattleTag() {
-        return battleTag;
+    public String getNickname() {
+        return nickname;
     }
 
-    public void setBattleTag(String battleTag) {
-        this.battleTag = battleTag;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getQq() {

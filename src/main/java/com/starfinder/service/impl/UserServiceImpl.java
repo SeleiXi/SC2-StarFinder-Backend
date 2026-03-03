@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(normalizedEmail);
         user.setPassword(registerDTO.getPassword());
         
-        user.setBattleTag(registerDTO.getBattleTag());
+        user.setNickname(registerDTO.getNickname());
         user.setQq(registerDTO.getQq());
         user.setRegion(registerDTO.getRegion() != null ? registerDTO.getRegion() : "US");
         user.setRace("");
@@ -71,9 +71,9 @@ public class UserServiceImpl implements UserService {
         user.setRole("user");
 
         // Try to fetch MMR from SC2 Pulse if battleTag is provided
-        if (registerDTO.getBattleTag() != null && !registerDTO.getBattleTag().isEmpty()) {
+        if (registerDTO.getNickname() != null && !registerDTO.getNickname().isEmpty() && registerDTO.getNickname().contains("#")) {
             try {
-                Long characterId = sc2PulseService.findCharacterId(registerDTO.getBattleTag());
+                Long characterId = sc2PulseService.findCharacterId(registerDTO.getNickname());
                 if (characterId != null) {
                     user.setCharacterId(characterId);
                     user.setMmr(sc2PulseService.getMMR(characterId, "LOTV_1V1"));
@@ -108,9 +108,9 @@ public class UserServiceImpl implements UserService {
         // Try to find by email
         User user = userMapper.findByEmail(identifier);
 
-        // If not found, try to find by battleTag
+        // If not found, try to find by nickname
         if (user == null) {
-            user = userMapper.findByBattleTag(identifier);
+            user = userMapper.findByNickname(identifier);
         }
 
         if (user == null) {
@@ -182,8 +182,8 @@ public class UserServiceImpl implements UserService {
             return Result.BadRequest("用户不存在");
         }
 
-        if (dto.getBattleTag() != null)
-            user.setBattleTag(dto.getBattleTag());
+        if (dto.getNickname() != null)
+            user.setNickname(dto.getNickname());
         if (dto.getRace() != null)
             user.setRace(dto.getRace());
         if (dto.getCommander() != null)
@@ -243,7 +243,7 @@ public class UserServiceImpl implements UserService {
 
     private void syncUserMMR(User user) {
         String[] tags = { 
-            user.getBattleTag(), 
+            user.getNickname(), 
             user.getBattleTagCN(), 
             user.getBattleTagUS(), 
             user.getBattleTagEU(), 

@@ -24,18 +24,19 @@ public class TutorialServiceImpl implements TutorialService {
         tutorial.setCategory(dto.getCategory());
         tutorial.setDescription(dto.getDescription());
         tutorial.setAuthor(dto.getAuthor());
+        tutorial.setStatus("pending");
         tutorialMapper.insert(tutorial);
         return Result.success(tutorial);
     }
 
     @Override
     public List<Tutorial> getAllTutorials() {
-        return tutorialMapper.findAll();
+        return tutorialMapper.findAllApproved();
     }
 
     @Override
     public List<Tutorial> getTutorialsByCategory(String category) {
-        return tutorialMapper.findByCategory(category);
+        return tutorialMapper.findByCategoryApproved(category);
     }
 
     @Override

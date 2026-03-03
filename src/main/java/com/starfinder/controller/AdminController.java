@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -44,6 +46,9 @@ public class AdminController {
     private EventService eventService;
     @Autowired
     private TutorialService tutorialService;
+
+    @Autowired
+    private FeedbackMapper feedbackMapper;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
@@ -481,5 +486,130 @@ public class AdminController {
         if (body.getCategory() != null) existing.setCategory(body.getCategory());
         replayFileMapper.update(existing);
         return Result.success(existing);
+    }
+
+    // ============ Approval Endpoints for Tutorial Content ============
+
+    @PutMapping("/tutorials/{id}/approve")
+    public Result<Tutorial> approveTutorial(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Tutorial t = tutorialMapper.findById(id);
+        if (t == null) return Result.BadRequest("教程不存在");
+        tutorialMapper.updateStatus(id, "approved");
+        t.setStatus("approved");
+        return Result.success(t);
+    }
+
+    @PutMapping("/tutorials/{id}/reject")
+    public Result<Tutorial> rejectTutorial(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Tutorial t = tutorialMapper.findById(id);
+        if (t == null) return Result.BadRequest("教程不存在");
+        tutorialMapper.updateStatus(id, "rejected");
+        t.setStatus("rejected");
+        return Result.success(t);
+    }
+
+    @PutMapping("/text-tutorials/{id}/approve")
+    public Result<TextTutorial> approveTextTutorial(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        TextTutorial t = textTutorialMapper.findById(id);
+        if (t == null) return Result.BadRequest("文字教程不存在");
+        textTutorialMapper.updateStatus(id, "approved");
+        t.setStatus("approved");
+        return Result.success(t);
+    }
+
+    @PutMapping("/text-tutorials/{id}/reject")
+    public Result<TextTutorial> rejectTextTutorial(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        TextTutorial t = textTutorialMapper.findById(id);
+        if (t == null) return Result.BadRequest("文字教程不存在");
+        textTutorialMapper.updateStatus(id, "rejected");
+        t.setStatus("rejected");
+        return Result.success(t);
+    }
+
+    @PutMapping("/coaching-posts/{id}/approve")
+    public Result<CoachingPost> approveCoachingPost(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        CoachingPost p = coachingPostMapper.findById(id);
+        if (p == null) return Result.BadRequest("教练帖不存在");
+        coachingPostMapper.updateStatus(id, "approved");
+        p.setStatus("approved");
+        return Result.success(p);
+    }
+
+    @PutMapping("/coaching-posts/{id}/reject")
+    public Result<CoachingPost> rejectCoachingPost(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        CoachingPost p = coachingPostMapper.findById(id);
+        if (p == null) return Result.BadRequest("教练帖不存在");
+        coachingPostMapper.updateStatus(id, "rejected");
+        p.setStatus("rejected");
+        return Result.success(p);
+    }
+
+    @PutMapping("/replays/{id}/approve")
+    public Result<ReplayFile> approveReplay(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        ReplayFile r = replayFileMapper.findById(id);
+        if (r == null) return Result.BadRequest("录像不存在");
+        replayFileMapper.updateStatus(id, "approved");
+        r.setStatus("approved");
+        return Result.success(r);
+    }
+
+    @PutMapping("/replays/{id}/reject")
+    public Result<ReplayFile> rejectReplay(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        ReplayFile r = replayFileMapper.findById(id);
+        if (r == null) return Result.BadRequest("录像不存在");
+        replayFileMapper.updateStatus(id, "rejected");
+        r.setStatus("rejected");
+        return Result.success(r);
+    }
+
+    // ============ Feedback Management ============
+    @GetMapping("/feedbacks")
+    public Result<List<Feedback>> listAllFeedbacks(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(feedbackMapper.findAll());
+    }
+
+    @PutMapping("/feedbacks/{id}")
+    public Result<Feedback> updateFeedback(@PathVariable Long id, @RequestBody Map<String, Object> body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Feedback existing = feedbackMapper.findById(id);
+        if (existing == null) return Result.BadRequest("反馈不存在");
+        String status = (String) body.get("status");
+        String adminReply = (String) body.get("adminReply");
+        if (status != null) existing.setStatus(status);
+        if (adminReply != null) existing.setAdminReply(adminReply);
+        feedbackMapper.update(existing);
+        return Result.success(existing);
+    }
+
+    @DeleteMapping("/feedbacks/{id}")
+    public Result<Void> deleteFeedback(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        feedbackMapper.deleteById(id);
+        return Result.success();
+    }
+
+    // ============ Pending Counts for Admin Dashboard ============
+    @GetMapping("/pending-counts")
+    public Result<Map<String, Integer>> getPendingCounts(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        Map<String, Integer> counts = new HashMap<>();
+        counts.put("tutorials", tutorialMapper.countPending());
+        counts.put("textTutorials", textTutorialMapper.countPending());
+        counts.put("coachingPosts", coachingPostMapper.countPending());
+        counts.put("replays", replayFileMapper.countPending());
+        counts.put("feedbacks", feedbackMapper.countPending());
+        counts.put("cheaters", cheaterMapper.countPending());
+        int total = counts.values().stream().mapToInt(Integer::intValue).sum();
+        counts.put("total", total);
+        return Result.success(counts);
     }
 }

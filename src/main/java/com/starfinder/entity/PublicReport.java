@@ -28,6 +28,9 @@ public class PublicReport {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getGameId() { return gameId; }
@@ -42,4 +45,6 @@ public class PublicReport {
     public void setReportedById(Long reportedById) { this.reportedById = reportedById; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

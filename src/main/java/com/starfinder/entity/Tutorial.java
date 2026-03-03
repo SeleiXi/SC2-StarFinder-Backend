@@ -22,6 +22,9 @@ public class Tutorial {
 
     private String author;
 
+    @Column(length = 20)
+    private String status;
+
     public Long getId() {
         return id;
     }
@@ -68,5 +71,13 @@ public class Tutorial {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

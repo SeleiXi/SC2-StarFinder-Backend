@@ -1,7 +1,7 @@
 package com.starfinder.dto;
 
 public class ProfileUpdateDTO {
-    private String battleTag;
+    private String nickname;
     private String coopLevel;
     private String battleTagCN;
     private String battleTagUS;
@@ -104,12 +104,12 @@ public class ProfileUpdateDTO {
         this.mmr4v4 = mmr4v4;
     }
 
-    public String getBattleTag() {
-        return battleTag;
+    public String getNickname() {
+        return nickname;
     }
 
-    public void setBattleTag(String battleTag) {
-        this.battleTag = battleTag;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getBattleTagCN() {

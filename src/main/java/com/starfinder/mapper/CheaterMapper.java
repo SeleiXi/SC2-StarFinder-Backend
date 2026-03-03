@@ -33,4 +33,7 @@ public interface CheaterMapper {
 
     @Delete("DELETE FROM cheaters WHERE id = #{id}")
     void deleteById(Long id);
+
+    @Select("SELECT COUNT(*) FROM cheaters WHERE status = 'pending'")
+    int countPending();
 }

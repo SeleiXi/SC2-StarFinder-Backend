@@ -27,9 +27,9 @@ public class TextTutorialController {
     public Result<List<TextTutorial>> list(@RequestParam(required = false) String category) {
         List<TextTutorial> tutorials;
         if (category != null && !category.isEmpty()) {
-            tutorials = textTutorialMapper.findByCategory(category);
+            tutorials = textTutorialMapper.findByCategoryApproved(category);
         } else {
-            tutorials = textTutorialMapper.findAll();
+            tutorials = textTutorialMapper.findAllApproved();
         }
         return Result.success(tutorials);
     }
@@ -58,7 +58,8 @@ public class TextTutorialController {
         tutorial.setUserId(userId);
         tutorial.setTitle(title.trim());
         tutorial.setContent(content.trim());
-        tutorial.setAuthorTag(user.getBattleTag() != null ? user.getBattleTag() : user.getEmail());
+        tutorial.setAuthorTag(user.getNickname() != null ? user.getNickname() : user.getEmail());
+        tutorial.setStatus("pending");
 
         String category = (String) body.get("category");
         if (category != null && !category.trim().isEmpty() && category.length() <= 50) {

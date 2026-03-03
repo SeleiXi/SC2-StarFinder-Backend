@@ -7,8 +7,8 @@ import java.util.List;
 @Mapper
 public interface ReplayFileMapper {
 
-    @Insert("INSERT INTO replay_files (user_id, title, file_name, file_path, description, category, author_tag, file_size, created_at) " +
-            "VALUES (#{userId}, #{title}, #{fileName}, #{filePath}, #{description}, #{category}, #{authorTag}, #{fileSize}, NOW())")
+    @Insert("INSERT INTO replay_files (user_id, title, file_name, file_path, description, category, author_tag, file_size, status, created_at) " +
+            "VALUES (#{userId}, #{title}, #{fileName}, #{filePath}, #{description}, #{category}, #{authorTag}, #{fileSize}, #{status}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(ReplayFile replay);
 
@@ -32,4 +32,16 @@ public interface ReplayFileMapper {
 
     @Select("SELECT COUNT(*) FROM replay_files WHERE user_id = #{userId}")
     int getFileCountByUser(@Param("userId") Long userId);
+
+    @Select("SELECT * FROM replay_files WHERE status = 'approved' ORDER BY created_at DESC")
+    List<ReplayFile> findAllApproved();
+
+    @Select("SELECT * FROM replay_files WHERE status = 'approved' AND category = #{category} ORDER BY created_at DESC")
+    List<ReplayFile> findByCategoryApproved(@Param("category") String category);
+
+    @Select("SELECT COUNT(*) FROM replay_files WHERE status = 'pending'")
+    int countPending();
+
+    @Update("UPDATE replay_files SET status = #{status} WHERE id = #{id}")
+    void updateStatus(@Param("id") Long id, @Param("status") String status);
 }

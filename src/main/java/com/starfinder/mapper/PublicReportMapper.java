@@ -7,8 +7,8 @@ import java.util.List;
 @Mapper
 public interface PublicReportMapper {
 
-    @Insert("INSERT INTO public_reports (game_id, mmr_min, mmr_max, description, reported_by_id, created_at) " +
-            "VALUES (#{gameId}, #{mmrMin}, #{mmrMax}, #{description}, #{reportedById}, NOW())")
+    @Insert("INSERT INTO public_reports (game_id, mmr_min, mmr_max, description, reported_by_id, image_url, created_at) " +
+            "VALUES (#{gameId}, #{mmrMin}, #{mmrMax}, #{description}, #{reportedById}, #{imageUrl}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(PublicReport report);
 
@@ -21,7 +21,7 @@ public interface PublicReportMapper {
     @Select("SELECT * FROM public_reports WHERE id = #{id}")
     PublicReport findById(@Param("id") Long id);
 
-    @Update("UPDATE public_reports SET game_id=#{gameId}, mmr_min=#{mmrMin}, mmr_max=#{mmrMax}, description=#{description} WHERE id=#{id}")
+    @Update("UPDATE public_reports SET game_id=#{gameId}, mmr_min=#{mmrMin}, mmr_max=#{mmrMax}, description=#{description}, image_url=#{imageUrl} WHERE id=#{id}")
     void update(PublicReport report);
 
     @Delete("DELETE FROM public_reports WHERE id = #{id}")

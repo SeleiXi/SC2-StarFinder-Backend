@@ -9,8 +9,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "battle_tag")
-    private String battleTag;
+    @Column(name = "nickname")
+    private String nickname;
 
     @Column(name = "battle_tag_cn")
     private String battleTagCN;
@@ -96,12 +96,12 @@ public class User {
         this.id = id;
     }
 
-    public String getBattleTag() {
-        return battleTag;
+    public String getNickname() {
+        return nickname;
     }
 
-    public void setBattleTag(String battleTag) {
-        this.battleTag = battleTag;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getBattleTagCN() {

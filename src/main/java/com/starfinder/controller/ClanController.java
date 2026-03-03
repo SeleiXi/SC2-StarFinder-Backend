@@ -144,7 +144,7 @@ public class ClanController {
         ClanRecruitment recruitment = new ClanRecruitment();
         recruitment.setUserId(userId);
         recruitment.setClanName(clanName.trim());
-        recruitment.setAuthorTag(user.getBattleTag() != null ? user.getBattleTag() : user.getEmail());
+        recruitment.setAuthorTag(user.getNickname() != null ? user.getNickname() : user.getEmail());
 
         String clanTag = (String) body.get("clanTag");
         if (clanTag != null && clanTag.length() <= 20) recruitment.setClanTag(clanTag.trim());

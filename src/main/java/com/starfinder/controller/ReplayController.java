@@ -37,9 +37,9 @@ public class ReplayController {
     public Result<List<ReplayFile>> list(@RequestParam(required = false) String category) {
         List<ReplayFile> replays;
         if (category != null && !category.isEmpty()) {
-            replays = replayFileMapper.findByCategory(category);
+            replays = replayFileMapper.findByCategoryApproved(category);
         } else {
-            replays = replayFileMapper.findAll();
+            replays = replayFileMapper.findAllApproved();
         }
         return Result.success(replays);
     }
@@ -96,7 +96,8 @@ public class ReplayController {
             replay.setFileName(originalName);
             replay.setFilePath("/api/replay/download/" + safeFileName);
             replay.setFileSize(file.getSize());
-            replay.setAuthorTag(user.getBattleTag() != null ? user.getBattleTag() : user.getEmail());
+            replay.setAuthorTag(user.getNickname() != null ? user.getNickname() : user.getEmail());
+            replay.setStatus("pending");
 
             if (description != null && !description.trim().isEmpty() && description.length() <= 2000) {
                 replay.setDescription(description.trim());

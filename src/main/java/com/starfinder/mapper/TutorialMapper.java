@@ -8,8 +8,8 @@ import java.util.List;
 @Mapper
 public interface TutorialMapper {
 
-    @Insert("INSERT INTO tutorials (title, url, category, description, author) " +
-            "VALUES (#{title}, #{url}, #{category}, #{description}, #{author})")
+    @Insert("INSERT INTO tutorials (title, url, category, description, author, status) " +
+            "VALUES (#{title}, #{url}, #{category}, #{description}, #{author}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Tutorial tutorial);
 
@@ -22,7 +22,7 @@ public interface TutorialMapper {
     @Select("SELECT * FROM tutorials WHERE id = #{id}")
     Tutorial findById(Long id);
 
-    @Update("UPDATE tutorials SET title=#{title}, url=#{url}, category=#{category}, description=#{description}, author=#{author} WHERE id=#{id}")
+    @Update("UPDATE tutorials SET title=#{title}, url=#{url}, category=#{category}, description=#{description}, author=#{author}, status=#{status} WHERE id=#{id}")
     void update(Tutorial tutorial);
 
     @Delete("DELETE FROM tutorials WHERE id = #{id}")
@@ -30,4 +30,16 @@ public interface TutorialMapper {
 
     @Select("SELECT DISTINCT category FROM tutorials WHERE category IS NOT NULL AND category != '' ORDER BY category")
     List<String> findDistinctCategories();
+
+    @Select("SELECT * FROM tutorials WHERE status = 'approved' ORDER BY id DESC")
+    List<Tutorial> findAllApproved();
+
+    @Select("SELECT * FROM tutorials WHERE status = 'approved' AND category = #{category} ORDER BY id DESC")
+    List<Tutorial> findByCategoryApproved(String category);
+
+    @Select("SELECT COUNT(*) FROM tutorials WHERE status = 'pending'")
+    int countPending();
+
+    @Update("UPDATE tutorials SET status = #{status} WHERE id = #{id}")
+    void updateStatus(@Param("id") Long id, @Param("status") String status);
 }

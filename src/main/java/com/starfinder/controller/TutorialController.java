@@ -32,8 +32,8 @@ public class TutorialController {
         // Auto-fill author with user's battleTag if not provided
         if (dto.getAuthor() == null || dto.getAuthor().isEmpty()) {
             com.starfinder.entity.User user = userMapper.findById(principal.userId());
-            if (user != null && user.getBattleTag() != null) {
-                dto.setAuthor(user.getBattleTag());
+            if (user != null && user.getNickname() != null) {
+                dto.setAuthor(user.getNickname());
             }
         }
         return tutorialService.createTutorial(dto);

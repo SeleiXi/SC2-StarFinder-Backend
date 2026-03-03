@@ -7,8 +7,8 @@ import java.util.List;
 @Mapper
 public interface CoachingPostMapper {
 
-    @Insert("INSERT INTO coaching_posts (user_id, title, race, mmr, price_info, contact, description, post_type, author_tag, created_at) " +
-            "VALUES (#{userId}, #{title}, #{race}, #{mmr}, #{priceInfo}, #{contact}, #{description}, #{postType}, #{authorTag}, NOW())")
+    @Insert("INSERT INTO coaching_posts (user_id, title, race, mmr, price_info, contact, description, post_type, author_tag, status, created_at) " +
+            "VALUES (#{userId}, #{title}, #{race}, #{mmr}, #{priceInfo}, #{contact}, #{description}, #{postType}, #{authorTag}, #{status}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(CoachingPost post);
 
@@ -26,4 +26,16 @@ public interface CoachingPostMapper {
 
     @Delete("DELETE FROM coaching_posts WHERE id = #{id}")
     void deleteById(Long id);
+
+    @Select("SELECT * FROM coaching_posts WHERE status = 'approved' ORDER BY created_at DESC")
+    List<CoachingPost> findAllApproved();
+
+    @Select("SELECT * FROM coaching_posts WHERE status = 'approved' AND post_type = #{postType} ORDER BY created_at DESC")
+    List<CoachingPost> findByTypeApproved(@Param("postType") String postType);
+
+    @Select("SELECT COUNT(*) FROM coaching_posts WHERE status = 'pending'")
+    int countPending();
+
+    @Update("UPDATE coaching_posts SET status = #{status} WHERE id = #{id}")
+    void updateStatus(@Param("id") Long id, @Param("status") String status);
 }

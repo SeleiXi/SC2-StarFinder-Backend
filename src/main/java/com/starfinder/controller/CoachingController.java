@@ -27,9 +27,9 @@ public class CoachingController {
     public Result<List<CoachingPost>> list(@RequestParam(required = false) String type) {
         List<CoachingPost> posts;
         if (type != null && !type.isEmpty()) {
-            posts = coachingPostMapper.findByType(type);
+            posts = coachingPostMapper.findByTypeApproved(type);
         } else {
-            posts = coachingPostMapper.findAll();
+            posts = coachingPostMapper.findAllApproved();
         }
         return Result.success(posts);
     }
@@ -53,7 +53,8 @@ public class CoachingController {
         post.setUserId(userId);
         post.setTitle(title.trim());
         post.setDescription(description.trim());
-        post.setAuthorTag(user.getBattleTag() != null ? user.getBattleTag() : user.getEmail());
+        post.setAuthorTag(user.getNickname() != null ? user.getNickname() : user.getEmail());
+        post.setStatus("pending");
 
         String race = (String) body.get("race");
         if (race != null) post.setRace(race);

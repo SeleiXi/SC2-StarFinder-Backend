@@ -419,7 +419,7 @@ public class SC2Controller {
                 if (streamUrl != null && !streamUrl.isBlank()
                         && (streamUrl.startsWith("http://") || streamUrl.startsWith("https://"))) {
                     Map<String, Object> flat = new HashMap<>();
-                    flat.put("userName", u.getBattleTag() != null ? u.getBattleTag() : u.getEmail());
+                    flat.put("userName", u.getNickname() != null ? u.getNickname() : u.getEmail());
                     flat.put("url", streamUrl);
                     flat.put("streamUrl", streamUrl);
                     flat.put("rating", u.getMmr());

@@ -166,7 +166,7 @@ public class SC2PulseService {
     }
 
     public void updateUserMMR(User user) {
-        String battleTag = user.getBattleTag();
+        String battleTag = user.getNickname();
         if (battleTag == null || !battleTag.contains("#"))
             return;
 
