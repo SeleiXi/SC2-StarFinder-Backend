@@ -7,8 +7,13 @@ import com.starfinder.security.AuthContext;
 import com.starfinder.security.AuthPrincipal;
 import com.starfinder.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.annotation.Resource;
 
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +56,16 @@ public class AdminController {
     private FeedbackMapper feedbackMapper;
 
     @Autowired
+    private QqGroupMapper qqGroupMapper;
+
+    @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private JavaMailSender mailSender;
+
+    @Value("${app.system.email}")
+    private String fromEmail;
 
     private static final String STREAMS_CACHE_KEY = "cache:sc2:streams";
 
@@ -587,6 +601,33 @@ public class AdminController {
         if (status != null) existing.setStatus(status);
         if (adminReply != null) existing.setAdminReply(adminReply);
         feedbackMapper.update(existing);
+
+        // Send email notification to user when admin replies
+        if (adminReply != null && !adminReply.trim().isEmpty()) {
+            try {
+                User feedbackUser = userMapper.findById(existing.getUserId());
+                if (feedbackUser != null && feedbackUser.getEmail() != null && !feedbackUser.getEmail().isEmpty()) {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setFrom(fromEmail);
+                    message.setTo(feedbackUser.getEmail());
+                    message.setSubject("StarFinder 反馈回复通知 - #" + existing.getId());
+                    String statusText = "resolved".equals(existing.getStatus()) ? "已解决" :
+                            "processing".equals(existing.getStatus()) ? "处理中" :
+                            "rejected".equals(existing.getStatus()) ? "已关闭" : "待处理";
+                    message.setText("您好 " + (feedbackUser.getNickname() != null ? feedbackUser.getNickname() : "") + ",\n\n"
+                            + "您提交的反馈 #" + existing.getId() + " 已收到管理员回复。\n\n"
+                            + "反馈内容：" + (existing.getContent().length() > 100 ? existing.getContent().substring(0, 100) + "..." : existing.getContent()) + "\n"
+                            + "当前状态：" + statusText + "\n"
+                            + "管理员回复：" + adminReply + "\n\n"
+                            + "感谢您的反馈，祝您游戏愉快！\n"
+                            + "—— StarFinder 团队");
+                    mailSender.send(message);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send feedback reply email: " + e.getMessage());
+            }
+        }
+
         return Result.success(existing);
     }
 
@@ -608,8 +649,37 @@ public class AdminController {
         counts.put("replays", replayFileMapper.countPending());
         counts.put("feedbacks", feedbackMapper.countPending());
         counts.put("cheaters", cheaterMapper.countPending());
+        counts.put("qqGroups", qqGroupMapper.countPending());
         int total = counts.values().stream().mapToInt(Integer::intValue).sum();
         counts.put("total", total);
         return Result.success(counts);
+    }
+
+    // ============ QQ Groups Management ============
+    @GetMapping("/qq-groups")
+    public Result<List<QqGroup>> listAllQqGroups(@RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        return Result.success(qqGroupMapper.findAll());
+    }
+
+    @PutMapping("/qq-groups/{id}")
+    public Result<QqGroup> updateQqGroup(@PathVariable Long id, @RequestBody QqGroup body, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        QqGroup existing = qqGroupMapper.findById(id);
+        if (existing == null) return Result.BadRequest("记录不存在");
+        if (body.getGroupName() != null) existing.setGroupName(body.getGroupName());
+        if (body.getGroupNumber() != null) existing.setGroupNumber(body.getGroupNumber());
+        if (body.getDescription() != null) existing.setDescription(body.getDescription());
+        if (body.getContactInfo() != null) existing.setContactInfo(body.getContactInfo());
+        if (body.getStatus() != null) existing.setStatus(body.getStatus());
+        qqGroupMapper.update(existing);
+        return Result.success(existing);
+    }
+
+    @DeleteMapping("/qq-groups/{id}")
+    public Result<Void> deleteQqGroup(@PathVariable Long id, @RequestParam Long adminId) {
+        if (!isAdmin(adminId)) return Result.BadRequest("无管理员权限");
+        qqGroupMapper.deleteById(id);
+        return Result.success();
     }
 }

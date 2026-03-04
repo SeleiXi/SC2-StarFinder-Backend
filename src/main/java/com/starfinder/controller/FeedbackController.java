@@ -52,4 +52,20 @@ public class FeedbackController {
         List<Feedback> mine = all.stream().filter(f -> f.getUserId().equals(userId)).toList();
         return Result.success(mine);
     }
+
+    @GetMapping("/resolved")
+    public Result<List<Feedback>> resolvedFeedbacks() {
+        List<Feedback> resolved = feedbackMapper.findByStatus("resolved");
+        return Result.success(resolved);
+    }
+
+    @GetMapping("/public")
+    public Result<List<Feedback>> publicFeedbacks() {
+        List<Feedback> all = feedbackMapper.findAll();
+        // Exclude rejected feedbacks from public view
+        List<Feedback> publicList = all.stream()
+                .filter(f -> !"rejected".equals(f.getStatus()))
+                .toList();
+        return Result.success(publicList);
+    }
 }

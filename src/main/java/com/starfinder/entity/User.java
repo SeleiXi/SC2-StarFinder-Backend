@@ -80,6 +80,17 @@ public class User {
     @Column(length = 500)
     private String avatar;
 
+    @Column(name = "receive_notifications")
+    private Boolean receiveNotifications;
+
+    public Boolean getReceiveNotifications() {
+        return receiveNotifications;
+    }
+
+    public void setReceiveNotifications(Boolean receiveNotifications) {
+        this.receiveNotifications = receiveNotifications;
+    }
+
     public String getAvatar() {
         return avatar;
     }

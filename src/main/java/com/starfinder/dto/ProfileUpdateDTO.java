@@ -23,6 +23,15 @@ public class ProfileUpdateDTO {
     private Integer mmr4v4;
     private String password;
     private String avatar;
+    private Boolean receiveNotifications;
+
+    public Boolean getReceiveNotifications() {
+        return receiveNotifications;
+    }
+
+    public void setReceiveNotifications(Boolean receiveNotifications) {
+        this.receiveNotifications = receiveNotifications;
+    }
 
     public String getAvatar() {
         return avatar;

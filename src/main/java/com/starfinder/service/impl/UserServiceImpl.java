@@ -216,6 +216,8 @@ public class UserServiceImpl implements UserService {
             user.setCoopLevel(dto.getCoopLevel());
         if (dto.getAvatar() != null)
             user.setAvatar(dto.getAvatar());
+        if (dto.getReceiveNotifications() != null)
+            user.setReceiveNotifications(dto.getReceiveNotifications());
 
         // Always try to sync MMR from SC2 Pulse when BattleTag is updated
         syncUserMMR(user);

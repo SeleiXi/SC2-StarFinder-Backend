@@ -8,9 +8,9 @@ import java.util.List;
 @Mapper
 public interface UserMapper {
 
-    @Insert("INSERT INTO users (nickname, battle_tag_cn, battle_tag_us, battle_tag_eu, battle_tag_kr, character_id, race, commander, coop_level, mmr, mmr_terran, mmr_zerg, mmr_protoss, mmr_random, mmr_2v2, mmr_3v3, mmr_4v4, email, password, qq, stream_url, signature, region, role) "
+    @Insert("INSERT INTO users (nickname, battle_tag_cn, battle_tag_us, battle_tag_eu, battle_tag_kr, character_id, race, commander, coop_level, mmr, mmr_terran, mmr_zerg, mmr_protoss, mmr_random, mmr_2v2, mmr_3v3, mmr_4v4, email, password, qq, stream_url, signature, region, role, receive_notifications) "
             +
-            "VALUES (#{nickname}, #{battleTagCN}, #{battleTagUS}, #{battleTagEU}, #{battleTagKR}, #{characterId}, #{race}, #{commander}, #{coopLevel}, #{mmr}, #{mmrTerran}, #{mmrZerg}, #{mmrProtoss}, #{mmrRandom}, #{mmr2v2}, #{mmr3v3}, #{mmr4v4}, #{email}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region}, #{role})")
+            "VALUES (#{nickname}, #{battleTagCN}, #{battleTagUS}, #{battleTagEU}, #{battleTagKR}, #{characterId}, #{race}, #{commander}, #{coopLevel}, #{mmr}, #{mmrTerran}, #{mmrZerg}, #{mmrProtoss}, #{mmrRandom}, #{mmr2v2}, #{mmr3v3}, #{mmr4v4}, #{email}, #{password}, #{qq}, #{streamUrl}, #{signature}, #{region}, #{role}, #{receiveNotifications})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(User user);
 
@@ -67,7 +67,7 @@ public interface UserMapper {
             @Param("race") String race);
 
     @Update("UPDATE users SET nickname=#{nickname}, battle_tag_cn=#{battleTagCN}, battle_tag_us=#{battleTagUS}, battle_tag_eu=#{battleTagEU}, battle_tag_kr=#{battleTagKR}, character_id=#{characterId}, race=#{race}, commander=#{commander}, coop_level=#{coopLevel}, " +
-            "mmr=#{mmr}, mmr_terran=#{mmrTerran}, mmr_zerg=#{mmrZerg}, mmr_protoss=#{mmrProtoss}, mmr_random=#{mmrRandom}, mmr_2v2=#{mmr2v2}, mmr_3v3=#{mmr3v3}, mmr_4v4=#{mmr4v4}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role}, avatar=#{avatar} WHERE id=#{id}")
+            "mmr=#{mmr}, mmr_terran=#{mmrTerran}, mmr_zerg=#{mmrZerg}, mmr_protoss=#{mmrProtoss}, mmr_random=#{mmrRandom}, mmr_2v2=#{mmr2v2}, mmr_3v3=#{mmr3v3}, mmr_4v4=#{mmr4v4}, qq=#{qq}, stream_url=#{streamUrl}, signature=#{signature}, region=#{region}, role=#{role}, avatar=#{avatar}, receive_notifications=#{receiveNotifications} WHERE id=#{id}")
     void update(User user);
 
     @Select("SELECT * FROM users WHERE commander IS NOT NULL AND commander != ''")
@@ -93,4 +93,7 @@ public interface UserMapper {
 
     @Select("SELECT COUNT(*) FROM users WHERE role = #{role}")
     long countByRole(@Param("role") String role);
+
+    @Select("SELECT * FROM users WHERE (role = 'admin' OR role = 'super_admin') AND receive_notifications = true")
+    List<User> findAdminsWithNotifications();
 }
