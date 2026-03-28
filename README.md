@@ -1,9 +1,9 @@
 # SC2 StarFinder Backend
 
-StarFinder 是一个星际争霸2社区平台的后端服务，提供玩家约战匹配、MMR查询、合作模式匹配、直播列表、教学资源、赛事宣传等功能。
+StarFinder 是一个星际争霸2社区平台的，提供玩家约战匹配、MMR查询、合作模式匹配、直播列表、教学资源、赛事宣传等功能。
 
 
-网站现已在 [https://www.pcecclub.cn/](https://www.pcecclub.cn/) 部署
+网站已在 [https://www.pcecclub.cn/](https://www.pcecclub.cn/) 部署，且已有许多玩家实际投入使用，感谢各位支持
 
 ## 技术栈
 
